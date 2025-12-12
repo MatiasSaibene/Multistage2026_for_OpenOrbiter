@@ -25,8 +25,6 @@ class MS_Camera : public VESSEL4{
 
         bool clbkDrawHUD(int mode, const HUDPAINTSPEC* hps, oapi::Sketchpad* skp) override;
 
-        void clbkRenderHUD(int mode, const HUDPAINTSPEC* hps, SURFHANDLE hDefaultTex) override;
-
         int clbkGeneric(int msgid, int prm, void* context) override;
 
         static bool InputNewRefVessel(void* id, char* str, void* usrdata);
