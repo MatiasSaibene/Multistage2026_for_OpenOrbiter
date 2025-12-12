@@ -32,7 +32,7 @@ endforeach()
 
 # Subdirectorios internos
 ## add_subdirectory(Multistage2015)
-## add_subdirectory(EmptyModule)
+add_subdirectory(EmptyModule)
 add_subdirectory(Crawler)
 ## add_subdirectory(MS_Hangar)
 ## add_subdirectory(MS_Camera)

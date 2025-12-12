@@ -346,7 +346,7 @@ void MS_Crawler::clbkSaveState(FILEHANDLE scn){
     SaveDefaultState(scn);
 
     std::string savevalbuff = std::format("{:.3f}", StateLifter);
-    oapiWriteScenario_string(scn, const_cast<char *>("LIFTER"), savevalbuff.data());
+    oapiWriteScenario_string(scn, const_cast<char *>("LIFTER"), const_cast<char *>(savevalbuff.c_str()));
 
     if(PadDetached){
         oapiWriteScenario_string(scn, const_cast<char *>("NOATTPAD"), const_cast<char *>(""));
