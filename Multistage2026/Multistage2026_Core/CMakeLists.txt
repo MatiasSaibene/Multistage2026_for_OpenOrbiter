@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.10)
 # Establecer políticas
 cmake_policy(SET CMP0081 NEW)
 
-project(Multistage2015 LANGUAGES CXX)
+project(Multistage2026 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -15,7 +15,6 @@ set(ORBITER_SDK_INCLUDE "${ORBITER_ROOT}/Orbitersdk/include")
 set(ORBITER_SDK_LIB_RELEASE "${ORBITER_ROOT}/Orbitersdk/lib/*.lib")
 set(ORBITER_SDK_LIB_DEBUG "${ORBITER_ROOT}/Orbitersdk/lib_debug/*.lib")
 set(ORBITER_MODULES "${ORBITER_ROOT}/Modules")
-set(ORBITER_SOURCE "${ORBITER_ROOT}/sources/Multistage2015")
 
 
 # Archivos fuente y encabezados
@@ -66,9 +65,3 @@ if(MSVC)
         $<$<CONFIG:Release>:/MD>
     )
 endif()
-
-# Salida en la carpeta Modules para Debug y Release
-set_target_properties(${PROJECT_NAME} PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY_DEBUG "${ORBITER_MODULES}"
-    RUNTIME_OUTPUT_DIRECTORY_RELEASE "${ORBITER_MODULES}"
-)

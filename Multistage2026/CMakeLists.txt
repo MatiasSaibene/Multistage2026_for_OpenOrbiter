@@ -31,7 +31,7 @@ foreach(output_config ${CMAKE_CONFIGURATION_TYPES})
 endforeach()
 
 # Subdirectorios internos
-add_subdirectory(Multistage2026_Core)
+##add_subdirectory(Multistage2026_Core)
 add_subdirectory(EmptyModule)
 add_subdirectory(Crawler)
 add_subdirectory(MS_Hangar)
