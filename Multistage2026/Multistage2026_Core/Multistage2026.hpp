@@ -164,24 +164,25 @@ struct PSGROWING {
 	int nEngine;
 	bool FirstLoop;
 	//int Th_idx;
-	PSGROWING(){
-		pss = {0};
-		GrowFactor_size = 0;
-		GrowFactor_rate = 0;
-		th = nullptr;
-		pos = _V(0, 0, 0);
-		growing = false;
-		status = 0;
-		counting = false;
-		doublepstime = 0;
-		basesize = 0;
-		baserate = 0;
-		basepos = _V(0, 0, 0);
-		ToBooster = false;
-		nItem = 0;
-		nEngine = 0;
-		FirstLoop = true;
-	}
+	PSGROWING()
+        : psh{nullptr, nullptr, nullptr},
+          pss{0},
+          GrowFactor_size(0),
+          GrowFactor_rate(0),
+          th(nullptr),
+          pos(_V(0, 0, 0)),
+          growing(false),
+          status(0),
+          counting(false),
+          doublepstime(0),
+          basesize(0),
+          baserate(0),
+          basepos(_V(0, 0, 0)),
+          ToBooster(false),
+          nItem(0),
+          nEngine(0),
+          FirstLoop(true)
+    {}
 };
 
 struct BOOSTER {
@@ -449,6 +450,10 @@ struct STAGE {
 	double linearthrust;
 	double linearisp;
 	STAGE(){
+		msh_h = nullptr;
+		msh_idh = 0;
+		th_main_h.fill(nullptr);
+		th_att_h.fill(nullptr);
 		wps1 = false;
 		wps2 = false;
 		off = _V(0, 0, 0);
@@ -466,7 +471,7 @@ struct STAGE {
 		pitchthrust = 0.0;
 		rollthrust = 0.0;
 		yawthrust = 0.0;
-
+		tank = nullptr;
 		defpitch = false;
 		defyaw = false;
 		defroll = false;
@@ -595,22 +600,25 @@ struct GNC_STEP {
 	bool executed;
 	std::string trchar;
 	std::array<bool, 6> wValue;
-    GNC_STEP(){
-        time = 0.0;
-        val_init = 0.0;
-        val_fin = 0.0;
-        time_init = 0.0;
-        time_fin = 0.0;
-        duration = 0.0;
-        trval1 = 0.0;
-        trval2 = 0.0;
-        trval3 = 0.0;
-        trval4 = 0.0;
-        trval5 = 0.0;
-        trval6 = 0.0;
-        executed = false;
-        wValue.fill(false);
-    }
+    GNC_STEP()
+        : time(0.0),
+          Comand(),           
+          GNC_Comand(),       
+          val_init(0.0),
+          val_fin(0.0),
+          time_init(0.0),
+          time_fin(0.0),
+          duration(0.0),
+          trval1(0.0),
+          trval2(0.0),
+          trval3(0.0),
+          trval4(0.0),
+          trval5(0.0),
+          trval6(0.0),
+          executed(false),
+          trchar(),
+          wValue{}      
+    {}
 };
 
 struct FX_LAUNCH {
@@ -641,6 +649,7 @@ struct FX_MACH {
     std::array<PSTREAM_HANDLE, 10> ps_h;
 	int nmach;
 	FX_MACH(){
+		ps_h.fill(nullptr);
 		mach_min = 0.0;
 		mach_max = 0.0;
 		added = false;
@@ -659,6 +668,7 @@ struct FX_VENT {
 	std::array<bool, 11> added;
 	int nVent;
 	FX_VENT(){
+		ps_h.fill(nullptr);
 		nVent = 0;
 		time_fin.fill(0.0);
 		off.fill(_V(0, 0, 0));
@@ -726,7 +736,7 @@ class Multistage2026 : public VESSEL4{
         void parseSound(const std::string filename);
         VECTOR3 GetBoosterPos(int nBooster, int N);
         void ArrangePayloadMeshes(std::string data, int pnl);
-        char* GetProperPayloadMeshName(int pnl, int n);
+        std::string GetProperPayloadMeshName(int pnl, int n);
         void ArrangePayloadOffsets(const std::string &data, int pnl);
         void Jettison(int type, int current);
         void Spawn(int type, int current);
