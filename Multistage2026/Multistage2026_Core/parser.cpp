@@ -1,10 +1,12 @@
 #include "Multistage2026.hpp"
 #include "simpleini/SimpleIni.h"
+#include <filesystem>
 #include <string>
 #include <format>
 #include <math.h>
 #include <stdio.h>
 #include <sstream>
+#include <winscard.h>
 /*********************************************************************************************
   This file is part of Multistage2015 project
   Copyright belogs to Fred18 for module implementation and its code
@@ -533,7 +535,7 @@ void Multistage2026::parseBoosters(const std::string filename) {
 			}
 		}
 
-		if (booster[b].meshname[0] == '0') {
+		if (booster[b].meshname.at(0) == '0') {
 			nBoosters = b;
 			logbuff = std::format("{}: Number of boosters group in the ini file: {}", GetName(), nBoosters);
 			oapiWriteLog(const_cast<char *>(logbuff.c_str()));
@@ -952,88 +954,130 @@ void Multistage2026::parseFXVent(const std::string filename)
 	}
 }
 
-void Multistage2026::parseFXLaunch(const std::string filename)
-{
-	char fxLtxt[128];
-	sprintf(fxLtxt, "FX_LAUNCH");
+void Multistage2026::parseFXLaunch(const std::string filename){
 
-	GetPrivateProfileString(fxLtxt, "N", buffreset, dataparsed, MAXLEN, filename);
-	FX_Launch.N = atoi(dataparsed);
-	GetPrivateProfileString(fxLtxt, "Height", buffreset, dataparsed, MAXLEN, filename);
-	FX_Launch.H = atof(dataparsed);
-	GetPrivateProfileString(fxLtxt, "Angle", buffreset, dataparsed, MAXLEN, filename);
-	FX_Launch.Angle = atof(dataparsed);
-	GetPrivateProfileString(fxLtxt, "Distance", buffreset, dataparsed, MAXLEN, filename);
-	FX_Launch.Distance = atof(dataparsed);
-	GetPrivateProfileString(fxLtxt, "CutoffAltitude", buffreset, dataparsed, MAXLEN, filename);
-	FX_Launch.CutoffAltitude = atof(dataparsed);
-	GetPrivateProfileString(fxLtxt, "pstream1", buffreset, dataparsed, MAXLEN, filename);
-	sprintf(FX_Launch.Ps1, dataparsed);
-	GetPrivateProfileString(fxLtxt, "pstream2", buffreset, dataparsed, MAXLEN, filename);
-	sprintf(FX_Launch.Ps2, dataparsed);
+	oapiWriteLogV("%s: parseFXLaunch() filename=%s", GetName(), filename.c_str());
 
-	if (FX_Launch.N >= 1) { wLaunchFX = TRUE; }
+	CSimpleIniA ini(true, false, false);
+
+	if (ini.LoadFile(filename.c_str()) < 0) {
+        oapiWriteLogV("%s: Failed to load INI configuration file: %s", GetName(), filename.c_str());
+        return;
+    }
+	
+	std::string fxLtxt = "FX_LAUNCH";
+
+	dataparsed = ini.GetValue(fxLtxt.c_str(), "N", "0");
+	FX_Launch.N = stoi(dataparsed);
+	dataparsed = ini.GetValue(fxLtxt.c_str(), "Height", "0.0");
+	FX_Launch.H = stof(dataparsed);
+	dataparsed = ini.GetValue(fxLtxt.c_str(), "Angle", "0.0");
+	FX_Launch.Angle = stof(dataparsed);
+	dataparsed = ini.GetValue(fxLtxt.c_str(), "Distance", "0.0");
+	FX_Launch.Distance = stof(dataparsed);
+	dataparsed = ini.GetValue(fxLtxt.c_str(), "CutoffAltitude", "0.0");
+	FX_Launch.CutoffAltitude = stof(dataparsed);
+	dataparsed = ini.GetValue(fxLtxt.c_str(), "pstream1", "");
+	FX_Launch.Ps1 = dataparsed;
+	dataparsed = ini.GetValue(fxLtxt.c_str(), "pstream2", "");
+	FX_Launch.Ps2 = dataparsed;
+
+	if(FX_Launch.N >= 1){ 
+		wLaunchFX = true;
+	}
 }
-void Multistage2026::parseTexture(const std::string filename) {
-	char textxt[128];
-	char bufftxt[128];
-	sprintf(textxt, "TEXTURE_LIST");
+
+
+void Multistage2026::parseTexture(const std::string filename){
+
+	oapiWriteLogV("%s: parseTexture() filename=%s", GetName(), filename.c_str());
+
+	CSimpleIniA ini(true, false, false);
+
+	if (ini.LoadFile(filename.c_str()) < 0) {
+        oapiWriteLogV("%s: Failed to load INI configuration file: %s", GetName(), filename.c_str());
+        return;
+    }
+
+	std::string textxt = "TEXTURE_LIST";
+	std::string bufftxt;
 
 	int texn;
 	for (texn = 0; texn < 16; texn++) {
-		sprintf(bufftxt, "TEX_%i", texn + 1);
 
-		GetPrivateProfileString(textxt, bufftxt, buffreset, dataparsed, MAXLEN, filename);
+		bufftxt = std::format("TEX_%i", texn + 1);
 
+		dataparsed = ini.GetValue(textxt.c_str(), bufftxt.c_str(), "");
 
-		if (strncmp(dataparsed, buffreset, MAXLEN - 5) == 0) { nTextures = texn; break; }
-		char checktxt[MAXLEN];
-		int k;
-		for (k = 0; k < MAXLEN; k++) {
-			tex.TextureName[k][texn] = dataparsed[k];
-			checktxt[k] = dataparsed[k];
+		if(dataparsed.empty()){
+			nTextures = texn;
+			break;
 		}
+		
+		std::string checktxt;
+		tex.TextureName.at(texn) = dataparsed;
+		checktxt = dataparsed;
 
-		sprintf(logbuff, "%s: Texture n.%i Loaded %s", GetName(), texn + 1, checktxt);
-		oapiWriteLog(logbuff);
-		tex.hTex[texn] = oapiRegisterExhaustTexture(checktxt);
+		oapiWriteLogV("%s: Texture n.%i Loaded %s", GetName(), texn + 1, checktxt.c_str());
+		tex.hTex.at(texn) = oapiRegisterExhaustTexture(const_cast<char *>(checktxt.c_str()));
 	}
+
 	return;
 }
-void Multistage2026::parseMisc(const std::string filename) {
-	char Misctxt[64];
-	sprintf(Misctxt, "MISC");
 
-	GetPrivateProfileString(Misctxt, "COG", buffreset, dataparsed, MAXLEN, filename);
-	Misc.COG = atof(dataparsed);
-	GetPrivateProfileString(Misctxt, "GNC_DEBUG", buffreset, dataparsed, MAXLEN, filename);
-	Misc.GNC_Debug = atoi(dataparsed);
+
+void Multistage2026::parseMisc(const std::string filename){
+
+	oapiWriteLogV("%s: parseMisc() filename=%s", GetName(), filename.c_str());
+
+	CSimpleIniA ini(true, false, false);
+
+	if (ini.LoadFile(filename.c_str()) < 0) {
+        oapiWriteLogV("%s: Failed to load INI configuration file: %s", GetName(), filename.c_str());
+        return;
+    }
+
+	std::string Misctxt = "MISC";
+
+	dataparsed = ini.GetValue(Misctxt.c_str(), "COG", "0.0");
+	Misc.COG = stof(dataparsed);
+	dataparsed = ini.GetValue(Misctxt.c_str(), "GNC_DEBUG", "0");
+	Misc.GNC_Debug = stoi(dataparsed);
+	dataparsed = ini.GetValue(Misctxt.c_str(), "TELEMETRY", "0");
 	int tval;
-	GetPrivateProfileString(Misctxt, "TELEMETRY", buffreset, dataparsed, MAXLEN, filename);
-	tval = atoi(dataparsed);
-	if (tval == 1) { Misc.telemetry = TRUE; }
-	else { Misc.telemetry = FALSE; }
-	GetPrivateProfileString(Misctxt, "FOCUS", buffreset, dataparsed, MAXLEN, filename);
-	Misc.Focus = atoi(dataparsed);
+	tval = stoi(dataparsed);
+	if (tval == 1){
+		Misc.telemetry = true;
+	} else {
+		Misc.telemetry = false;
+	}
+	dataparsed = ini.GetValue(Misctxt.c_str(), "FOCUS", "0");
+	Misc.Focus = stoi(dataparsed);
+	dataparsed = ini.GetValue(Misctxt.c_str(), "THRUST_REAL_POS", "0");
 	int trp;
-	GetPrivateProfileString(Misctxt, "THRUST_REAL_POS", buffreset, dataparsed, MAXLEN, filename);
-	trp = atoi(dataparsed);
-	if (trp == 1) { Misc.thrustrealpos = TRUE; sprintf(logbuff, "%s: Thrust in Real Position", GetName()); oapiWriteLog(logbuff); }
-	else { Misc.thrustrealpos = FALSE; }
+	trp = stoi(dataparsed);
+	if (trp == 1){
+		Misc.thrustrealpos = true; 
+		oapiWriteLogV("%s: Thrust in Real Position", GetName());
+	} else {
+		Misc.thrustrealpos = false;
+	}
+	dataparsed = ini.GetValue(Misctxt.c_str(), "VERTICAL_ANGLE", "0.0");
 	Misc.VerticalAngle = 0;
-	GetPrivateProfileString(Misctxt, "VERTICAL_ANGLE", buffreset, dataparsed, MAXLEN, filename);
-	Misc.VerticalAngle = atof(dataparsed) * RAD;
+	Misc.VerticalAngle = stof(dataparsed) * RAD;
 
 	//added by rcraig42 to retrieve drag_factor from ini --------------------------------------------------------
 
-	GetPrivateProfileString(Misctxt, "drag_factor", buffreset, dataparsed, MAXLEN, filename);
-	Misc.drag_factor = atof(dataparsed);
+	dataparsed = ini.GetValue(Misctxt.c_str(), "drag_factor", "0.0");
+	Misc.drag_factor = stof(dataparsed);
 
 	//------------------------------------------------------------------------------------------------------------
-	GetPrivateProfileString(Misctxt, "PAD_MODULE", buffreset, dataparsed, MAXLEN, filename);
-	if (strncmp(dataparsed, buffreset, MAXLEN - 5) == 0) { sprintf(Misc.PadModule, "EmptyModule"); }
-	else { sprintf(Misc.PadModule, dataparsed); }
-
+	dataparsed = ini.GetValue(Misctxt.c_str(), "PAD_MODULE", "0.0");
+	if (dataparsed.empty()){
+		Misc.PadModule = "EmptyModule";
+	} else {
+		Misc.PadModule = dataparsed;
+	}
 
 	return;
 }
@@ -1059,14 +1103,12 @@ bool Multistage2026::parseinifile(const std::string filename) {
 	return true;
 }
 
-void Multistage2026::parseTelemetryFile(const std::string filename)
-{
-	char filebuff[MAXLEN];
-	sprintf(filebuff, OrbiterRoot);
-	strcat(filebuff, "\\");
-	strcat(filebuff, filename);
-	string line;
-	ifstream tlm_file(filebuff);
+void Multistage2026::parseTelemetryFile(const std::string filename){
+	
+	std::filesystem::path filebuff = OrbiterRoot + filename;
+
+	std::string line;
+	std::ifstream tlm_file(filebuff);
 
 	loadedtlmlines = 0;
 	if (tlm_file.is_open())
@@ -1077,14 +1119,14 @@ void Multistage2026::parseTelemetryFile(const std::string filename)
 			if (!line.empty()) {
 				const char* cstr = line.c_str();
 
-				sscanf(cstr, "%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf", &ReftlmAlt[loadedtlmlines].x, &ReftlmAlt[loadedtlmlines].y, &ReftlmSpeed[loadedtlmlines].y, &ReftlmPitch[loadedtlmlines].y, &ReftlmThrust[loadedtlmlines].y, &ReftlmMass[loadedtlmlines].y, &ReftlmVv[loadedtlmlines].y, &ReftlmAcc[loadedtlmlines].y);
-				if (ReftlmAlt[loadedtlmlines].x == 0) { continue; }
-				ReftlmSpeed[loadedtlmlines].x = ReftlmAlt[loadedtlmlines].x;
-				ReftlmPitch[loadedtlmlines].x = ReftlmAlt[loadedtlmlines].x;
-				ReftlmThrust[loadedtlmlines].x = ReftlmAlt[loadedtlmlines].x;
-				ReftlmMass[loadedtlmlines].x = ReftlmAlt[loadedtlmlines].x;
-				ReftlmVv[loadedtlmlines].x = ReftlmAlt[loadedtlmlines].x;
-				ReftlmAcc[loadedtlmlines].x = ReftlmAlt[loadedtlmlines].x;
+				sscanf(cstr, "%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf", &ReftlmAlt.at(loadedtlmlines).x, &ReftlmAlt.at(loadedtlmlines).y, &ReftlmSpeed.at(loadedtlmlines).y, &ReftlmPitch.at(loadedtlmlines).y, &ReftlmThrust.at(loadedtlmlines).y, &ReftlmMass.at(loadedtlmlines).y, &ReftlmVv.at(loadedtlmlines).y, &ReftlmAcc.at(loadedtlmlines).y);
+				if (ReftlmAlt.at(loadedtlmlines).x == 0) { continue; }
+				ReftlmSpeed.at(loadedtlmlines).x = ReftlmAlt.at(loadedtlmlines).x;
+				ReftlmPitch.at(loadedtlmlines).x = ReftlmAlt.at(loadedtlmlines).x;
+				ReftlmThrust.at(loadedtlmlines).x = ReftlmAlt.at(loadedtlmlines).x;
+				ReftlmMass.at(loadedtlmlines).x = ReftlmAlt.at(loadedtlmlines).x;
+				ReftlmVv.at(loadedtlmlines).x = ReftlmAlt.at(loadedtlmlines).x;
+				ReftlmAcc.at(loadedtlmlines).x = ReftlmAlt.at(loadedtlmlines).x;
 
 				loadedtlmlines++;
 			}
@@ -1093,48 +1135,43 @@ void Multistage2026::parseTelemetryFile(const std::string filename)
 }
 
 void Multistage2026::parseGuidanceFile(const std::string filename) {
+	
 	nsteps = 1;
 
+	std::filesystem::path filebuff = OrbiterRoot + guidancefile;//Config\\multistage\\guidance_shuttle.txt");
+	std::string line;
 
-	char filebuff[MAXLEN];
-	string line;
-	sprintf(filebuff, OrbiterRoot);
-	strcat(filebuff, "\\");
-	strcat(filebuff, guidancefile);//Config\\multistage\\guidance_shuttle.txt");
+	oapiWriteLogV("%s: Guidance File present: %s", GetName(), guidancefile.c_str());
 
-	sprintf(logbuff, "%s: Guidance File present: %s", GetName(), guidancefile);
-	oapiWriteLog(logbuff);
-	ifstream gnc_file(filebuff);
-	if (gnc_file.is_open())
-	{
+	std::ifstream gnc_file(filebuff);
 
-		while (getline(gnc_file, line))
+	if (gnc_file.is_open()){
 
-		{
+		while (getline(gnc_file, line)){
 			if (!line.empty()) {
 
-				for (int i = 0; i < 6; i++) { Gnc_step[nsteps].wValue[i] = FALSE; }
+				for (int i = 0; i < 6; i++) { Gnc_step.at(nsteps).wValue[i] = FALSE; }
 
 				std::size_t findEqual = line.find_first_of("=");
 				if (findEqual != line.npos) {
-					string mettime = line.substr(0, findEqual);
+					std::string mettime = line.substr(0, findEqual);
 
-					Gnc_step[nsteps].time = atof(&mettime[0]);
+					Gnc_step.at(nsteps).time = atof(&mettime.at(0));
 
 					std::size_t findLineEnd = line.find_first_of(")");
 					if (findLineEnd != line.npos) {
 
 						std::size_t findOpenP = line.find_first_of("(");
 						if (findOpenP != line.npos) {
-							string comand = line.substr(findEqual + 1, findOpenP - findEqual - 1);
-							sprintf(Gnc_step[nsteps].Comand, &comand[0]);
+							std::string comand = line.substr(findEqual + 1, findOpenP - findEqual - 1);
+							Gnc_step.at(nsteps).Comand = comand;
 
-							string values = line.substr(findOpenP + 1, findLineEnd - findOpenP - 1);
-							Gnc_step[nsteps].wValue[0] = TRUE;
+							std::string values = line.substr(findOpenP + 1, findLineEnd - findOpenP - 1);
+							Gnc_step.at(nsteps).wValue.at(0) = true;
 							std::size_t findFirstComma = values.find_first_of(",");
 							if (findFirstComma != values.npos) {
 								value1 = values.substr(0, findFirstComma);
-								Gnc_step[nsteps].wValue[1] = TRUE;
+								Gnc_step.at(nsteps).wValue.at(1) = true;
 
 
 								std::size_t findSecondComma = values.find_first_of(",", findFirstComma + 1);
@@ -1142,26 +1179,26 @@ void Multistage2026::parseGuidanceFile(const std::string filename) {
 								if (findSecondComma != values.npos) {
 
 									value2 = values.substr(findFirstComma + 1, findSecondComma - findFirstComma - 1);
-									Gnc_step[nsteps].wValue[2] = TRUE;
+									Gnc_step.at(nsteps).wValue.at(2) = true;
 
 									std::size_t findThirdComma = values.find_first_of(",", findSecondComma + 1);
 
 									if (findThirdComma != values.npos) {
 
 										value3 = values.substr(findSecondComma + 1, findThirdComma - findSecondComma - 1);
-										Gnc_step[nsteps].wValue[3] = TRUE;
+										Gnc_step.at(nsteps).wValue.at(3) = true;
 
 										std::size_t findFourthComma = values.find_first_of(",", findThirdComma + 1);
 										if (findFourthComma != values.npos) {
 											value4 = values.substr(findThirdComma + 1, findFourthComma - findThirdComma - 1);
-											Gnc_step[nsteps].wValue[4] = TRUE;
+											Gnc_step.at(nsteps).wValue[4] = true;
 											std::size_t findFifthComma = values.find_first_of(",", findFourthComma + 1);
 											if (findFifthComma != values.npos) {
 												value5 = values.substr(findFourthComma + 1, findFifthComma - findFourthComma - 1);
-												value6 = values.substr(findFifthComma + 1, string::npos);
-												Gnc_step[nsteps].wValue[5] = TRUE;
+												value6 = values.substr(findFifthComma + 1, std::string::npos);
+												Gnc_step.at(nsteps).wValue[5] = true;
 											}
-											else { value5 = values.substr(findFourthComma + 1, string::npos); }
+											else { value5 = values.substr(findFourthComma + 1, std::string::npos); }
 										}
 										else { value4 = values.substr(findThirdComma + 1, values.npos); }
 									}
@@ -1172,30 +1209,29 @@ void Multistage2026::parseGuidanceFile(const std::string filename) {
 							else { value1 = values.substr(0, values.npos); }
 						}
 					}
-					if (Gnc_step[nsteps].wValue[0]) { Gnc_step[nsteps].trval1 = atof(&value1[0]); }
-					else { Gnc_step[nsteps].trval1 = 0; }
-					if (Gnc_step[nsteps].wValue[1]) { Gnc_step[nsteps].trval2 = atof(&value2[0]); }
-					else { Gnc_step[nsteps].trval2 = 0; }
-					if (Gnc_step[nsteps].wValue[2]) { Gnc_step[nsteps].trval3 = atof(&value3[0]); }
-					else { Gnc_step[nsteps].trval3 = 0; }
-					if (Gnc_step[nsteps].wValue[3]) { Gnc_step[nsteps].trval4 = atof(&value4[0]); }
-					else { Gnc_step[nsteps].trval4 = 0; }
-					if (Gnc_step[nsteps].wValue[4]) { Gnc_step[nsteps].trval5 = atof(&value5[0]); }
-					else { Gnc_step[nsteps].trval5 = 0; }
-					if (Gnc_step[nsteps].wValue[5]) { Gnc_step[nsteps].trval6 = atof(&value6[0]); }
-					else { Gnc_step[nsteps].trval6 = 0; }
+					if (Gnc_step.at(nsteps).wValue.at(0)) { Gnc_step.at(nsteps).trval1 = atof(&value1.at(0)); }
+					else { Gnc_step.at(nsteps).trval1 = 0; }
+					if (Gnc_step.at(nsteps).wValue.at(1)) { Gnc_step.at(nsteps).trval2 = atof(&value2.at(0)); }
+					else { Gnc_step.at(nsteps).trval2 = 0; }
+					if (Gnc_step.at(nsteps).wValue.at(2)) { Gnc_step.at(nsteps).trval3 = atof(&value3.at(0)); }
+					else { Gnc_step.at(nsteps).trval3 = 0; }
+					if (Gnc_step.at(nsteps).wValue.at(3)) { Gnc_step.at(nsteps).trval4 = atof(&value4.at(0)); }
+					else { Gnc_step.at(nsteps).trval4 = 0; }
+					if (Gnc_step.at(nsteps).wValue[4]) { Gnc_step.at(nsteps).trval5 = atof(&value5.at(0)); }
+					else { Gnc_step.at(nsteps).trval5 = 0; }
+					if (Gnc_step.at(nsteps).wValue[5]) { Gnc_step.at(nsteps).trval6 = atof(&value6.at(0)); }
+					else { Gnc_step.at(nsteps).trval6 = 0; }
 
-				}
-				else {
-					sprintf(Gnc_step[nsteps].Comand, "noline");
-					Gnc_step[nsteps].GNC_Comand = CM_NOLINE;
-					Gnc_step[nsteps].time_fin = -10000;
-					Gnc_step[nsteps].trval1 = 0;
-					Gnc_step[nsteps].trval2 = 0;
-					Gnc_step[nsteps].trval3 = 0;
-					Gnc_step[nsteps].trval4 = 0;
-					Gnc_step[nsteps].trval5 = 0;
-					Gnc_step[nsteps].trval6 = 0;
+				} else {
+					Gnc_step.at(nsteps).Comand = "noline";
+					Gnc_step.at(nsteps).GNC_Comand = CM_NOLINE;
+					Gnc_step.at(nsteps).time_fin = -10000;
+					Gnc_step.at(nsteps).trval1 = 0;
+					Gnc_step.at(nsteps).trval2 = 0;
+					Gnc_step.at(nsteps).trval3 = 0;
+					Gnc_step.at(nsteps).trval4 = 0;
+					Gnc_step.at(nsteps).trval5 = 0;
+					Gnc_step.at(nsteps).trval6 = 0;
 				}
 
 
@@ -1212,39 +1248,29 @@ void Multistage2026::parseGuidanceFile(const std::string filename) {
 					std::size_t foundDisJett = line.find("jettison");
 
 					if (foundDisPitch != std::string::npos) {
-						sprintf(Gnc_step[nsteps].Comand, "disablepitch");
-					}
-					else if (foundDisRoll != std::string::npos) {
-						sprintf(Gnc_step[nsteps].Comand, "disableroll");
-					}
-					else if (foundDisJett != std::string::npos) {
-						sprintf(Gnc_step[nsteps].Comand, "disablejettison");
+						Gnc_step.at(nsteps).Comand = "disablepitch";
+					} else if (foundDisRoll != std::string::npos) {
+						Gnc_step.at(nsteps).Comand = "disableroll";
+					} else if (foundDisJett != std::string::npos) {
+						Gnc_step.at(nsteps).Comand = "disablejettison";
 					}
 
-				}
-				else if (foundPlay != std::string::npos) {
+				} else if (foundPlay != std::string::npos) {
 					std::size_t findopen = line.find_first_of("(");
 					std::size_t findclose = line.find_first_of(")");
-					string filename = line.substr(findopen + 1, findclose - findopen - 1);
-					sprintf(Gnc_step[nsteps].Comand, "playsound");
-					filename.copy(Gnc_step[nsteps].trchar, MAXLEN, 0);
+					std::string filename = line.substr(findopen + 1, findclose - findopen - 1);
+					Gnc_step.at(nsteps).Comand = "playsound";
+					//filename.copy(Gnc_step.at(nsteps).trchar, MAXLEN, 0);
 				}
-
-
-
-
 				++nsteps;
+			} else {
+				continue;
 			}
-			else { continue; }
-
-
 		}
-
 		nsteps -= 1;
 
 		gnc_file.close();
 	}
-
 	VinkaComposeGNCSteps();
 	VinkaRearrangeSteps();
 	nsteps = VinkaCountSteps();

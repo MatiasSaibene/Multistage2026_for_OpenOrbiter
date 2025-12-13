@@ -40,10 +40,6 @@ struct VECTOR4F {
 struct VECTOR2 {
 	double x;
 	double y;
-    VECTOR2(){
-        x = 0.0;
-        y = 0.0;
-    }
 };
 
 struct CUTOFF_CONDITIONS {
@@ -1030,7 +1026,7 @@ class Multistage2026 : public VESSEL4{
         VECTOR3 fhat;
         double thrust;
         double mass;
-        std::array<double, 10> _a;
+        std::array<double, 10> a_;
         std::array<double, 10> v_e;
         std::array<double, 10> tau_;
         double omega;
