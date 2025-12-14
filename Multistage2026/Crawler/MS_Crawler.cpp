@@ -228,7 +228,7 @@ void MS_Crawler::clbkSetClassCaps(FILEHANDLE cfg){
 	double ro = 20;
 
     SetTouchdownPoints(_V(cos(30 * RAD) * ro, 0.01, -sin(30 * RAD) * ro), _V(0, 0.01, 1 * ro), _V(-cos(30 * RAD) * ro, 0.01, -sin(30 * RAD) * ro));
-	msh = oapiLoadMeshGlobal("Multistage2015\\MS_Crawler\\MS_Crawler");
+	msh = oapiLoadMeshGlobal("Multistage2026\\MS_Crawler\\MS_Crawler");
 	VECTOR3 ofs = _V(0, 0, 0);
 	SetMeshVisibilityMode(AddMesh(msh, &ofs), MESHVIS_ALWAYS);
 

@@ -1,8 +1,8 @@
 #pragma once
 #include <array>
 #include <string>
-#ifndef __MULTISTAGE2015_HPP_
-#define __MULTISTAGE2015_HPP_
+#ifndef __MULTISTAGE2026_HPP_
+#define __MULTISTAGE2026_HPP_
 
 #include "../../include/Orbitersdk.h"
 
@@ -744,12 +744,12 @@ class Multistage2026 : public VESSEL4{
         VECTOR4F CharToVec4(const std::string &str);
 	    void CreateRCS();
 	    void CreateMainThruster();
-        SURFHANDLE GetProperExhaustTexture(const std::string name);
+        SURFHANDLE GetProperExhaustTexture(const std::string &name);
 
         void FLY(double simtime, double simdtime, double mjdate);
 
         VECTOR3 RotateVecZ(VECTOR3 input, double Angle);
-	    PARTICLE GetProperPS(const std::string name);
+	    PARTICLE GetProperPS(const std::string &name);
 	    void InitializeDelays();
 
         void ToggleComplexFlight();
@@ -1121,9 +1121,9 @@ class Multistage2026 : public VESSEL4{
         OBJHANDLE hramp;
         OBJHANDLE hhangar;
         OBJHANDLE hCrawler;
-        VESSEL3* vCrawler;
-        VESSEL3* vramp;
-        VESSEL3* vhangar;
+        VESSEL4* vCrawler;
+        VESSEL4* vramp;
+        VESSEL4* vhangar;
         VESSELSTATUS2 vsramp, vshangar;
         ATTACHMENTHANDLE AttToRamp, padramp, AttToHangar, PadHangar, AttToCrawler;
         bool wRamp;
@@ -1146,4 +1146,4 @@ class Multistage2026 : public VESSEL4{
 
 };
 
-#endif //!__MULTISTAGE2015_HPP_
+#endif //!__MULTISTAGE2026_HPP_

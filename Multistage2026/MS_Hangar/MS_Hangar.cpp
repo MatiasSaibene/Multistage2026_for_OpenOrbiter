@@ -161,7 +161,7 @@ void MS_Hangar::clbkSetClassCaps(FILEHANDLE cfg){
 
     oapiWriteLog(const_cast<char *>("Creating Hangar"));
 
-    MESHHANDLE ms1=oapiLoadMeshGlobal("Multistage2015\\MS_Hangar\\MS_Hangar");
+    MESHHANDLE ms1=oapiLoadMeshGlobal("Multistage2026\\MS_Hangar\\MS_Hangar");
 
     oapiWriteLog(const_cast<char *>("Hangar Mesh Loaded"));
     VECTOR3 ofs=_V(0,0,0);

@@ -56,7 +56,7 @@ void boom::clbkSetClassCaps(FILEHANDLE cfg)
 	//SetPitchMomentScale(0);
 
 
-    SURFHANDLE texfire = oapiRegisterExhaustTexture(const_cast<char*>("Multistage2015\\Contrail2"));
+    SURFHANDLE texfire = oapiRegisterExhaustTexture(const_cast<char*>("Multistage2026\\Contrail2"));
 	static PARTICLESTREAMSPEC fire = {
 		0, //flag
 		30, //size
@@ -72,7 +72,7 @@ void boom::clbkSetClassCaps(FILEHANDLE cfg)
 		texfire
 	};
 
-    SURFHANDLE JSexplosivebolt = oapiRegisterExhaustTexture(const_cast<char*>("Multistage2015\\Explosivebolt"));
+    SURFHANDLE JSexplosivebolt = oapiRegisterExhaustTexture(const_cast<char*>("Multistage2026\\Explosivebolt"));
 	static PARTICLESTREAMSPEC stagingfireps = {
 
 		0,		// flag
@@ -88,7 +88,7 @@ void boom::clbkSetClassCaps(FILEHANDLE cfg)
 		PARTICLESTREAMSPEC::ATM_FLAT, 1, 1,
 		JSexplosivebolt
 	};
-	SURFHANDLE explosion = oapiRegisterExhaustTexture(const_cast<char*>("Multistage2015\\explosion"));
+	SURFHANDLE explosion = oapiRegisterExhaustTexture(const_cast<char*>("Multistage2026\\explosion"));
 	static PARTICLESTREAMSPEC def = {
 
 		0,		// flag
