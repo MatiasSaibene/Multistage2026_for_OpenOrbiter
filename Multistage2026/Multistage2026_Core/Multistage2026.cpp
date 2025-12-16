@@ -1,6 +1,8 @@
 #include "Multistage2026.hpp"
+#include "DevModeCtrl.hpp"
 #include <array>
 #include <filesystem>
+#include <format>
 #include <sstream>
 #include <string>
 #define ORBITER_MODULE
@@ -3327,4 +3329,631 @@ int Multistage2026::clbkConsumeDirectKey(char* kstate){
 		}
 	}
 	return 0;
+}
+
+
+void Multistage2026::clbkSaveState(FILEHANDLE scn){
+	std::string savebuff, savevalbuff;
+	
+	if (HangarMode){
+		Configuration = 0;
+	}
+
+	SaveDefaultState(scn);
+
+
+	savebuff = "CONFIG_FILE";
+	savevalbuff = fileini;
+	oapiWriteScenario_string(scn, const_cast<char *>(savebuff.c_str()), const_cast<char *>(savevalbuff.c_str()));
+
+	if(!guidancefile.empty()){
+		savebuff = "GUIDANCE_FILE";
+		savevalbuff = guidancefile;
+		oapiWriteScenario_string(scn, const_cast<char *>(savebuff.c_str()), const_cast<char *>(savevalbuff.c_str()));
+	}
+
+	savebuff = "CONFIGURATION";
+	savevalbuff = Configuration;
+	oapiWriteScenario_string(scn, const_cast<char *>(savebuff.c_str()), const_cast<char *>(savevalbuff.c_str()));
+
+	if (Complex) {
+		savebuff = "COMPLEX";
+		savevalbuff = "";
+		oapiWriteScenario_string(scn, const_cast<char *>(savebuff.c_str()), const_cast<char *>(savevalbuff.c_str()));
+	}
+
+
+	if (HangarMode) {
+		savebuff = "HANGAR";
+		savevalbuff = "";
+		oapiWriteScenario_string(scn, const_cast<char *>(savebuff.c_str()), const_cast<char *>(savevalbuff.c_str()));
+	}
+
+	savebuff = "CURRENT_BOOSTER";
+	savevalbuff = std::format("{}", currentBooster + 1);
+	oapiWriteScenario_string(scn, const_cast<char *>(savebuff.c_str()), const_cast<char *>(savevalbuff.c_str()));
+
+	savebuff = "CURRENT_STAGE";
+	savevalbuff = std::format("{}", currentStage + 1);
+	oapiWriteScenario_string(scn, const_cast<char *>(savebuff.c_str()), const_cast<char *>(savevalbuff.c_str()));
+
+	savebuff = "CURRENT_INTERSTAGE";
+	savevalbuff = std::format("{}", currentInterstage + 1);
+	oapiWriteScenario_string(scn, const_cast<char *>(savebuff.c_str()), const_cast<char *>(savevalbuff.c_str()));
+
+	savebuff = "CURRENT_PAYLOAD";
+	savevalbuff = std::format("{}", currentPayload + 1);
+	oapiWriteScenario_string(scn, const_cast<char *>(savebuff.c_str()), const_cast<char *>(savevalbuff.c_str()));
+
+	savebuff = "FAIRING";
+	savevalbuff = std::format("{}", wFairing);
+	oapiWriteScenario_string(scn, const_cast<char *>(savebuff.c_str()), const_cast<char *>(savevalbuff.c_str()));
+
+	savebuff = "MET";
+	savevalbuff = std::format("{:.3f}", MET);
+	oapiWriteScenario_string(scn, const_cast<char *>(savebuff.c_str()), const_cast<char *>(savevalbuff.c_str()));
+
+	if(APstat){
+		Gnc_running = 1;
+		savebuff = "GNC_RUN";
+		savevalbuff = std::format("{}", Gnc_running);
+		oapiWriteScenario_string(scn, const_cast<char *>(savebuff.c_str()), const_cast<char *>(savevalbuff.c_str()));
+	}
+
+	if (stage.at(currentStage).batteries.wBatts){
+		savebuff = "BATTERY";
+		savevalbuff = std::format("{}", stage.at(currentStage).batteries.CurrentCharge);
+		oapiWriteScenario_string(scn, const_cast<char *>(savebuff.c_str()), const_cast<char *>(savevalbuff.c_str()));
+	}
+
+	if (stage.at(currentStage).DenyIgnition){
+		savebuff = "DENY_IGNITION";
+		savevalbuff = "";
+
+		oapiWriteScenario_string(scn, const_cast<char *>(savebuff.c_str()), const_cast<char *>(savevalbuff.c_str()));
+	}
+
+	if (GrowingParticles){
+		savebuff = "GROWING_PARTICLES";
+		savevalbuff = "";
+		oapiWriteScenario_string(scn, const_cast<char *>(savebuff.c_str()), const_cast<char *>(savevalbuff.c_str()));
+	}
+
+	if (AJdisabled) {
+		int val = 1;
+		savebuff = "GNC_AUTO_JETTISON";
+		savevalbuff = std::format("{}", val);
+		oapiWriteScenario_string(scn, const_cast<char *>(savebuff.c_str()), const_cast<char *>(savevalbuff.c_str()));
+	}
+
+	savebuff = "STAGE_IGNITION_TIME";
+	savevalbuff = std::format("{:.6f}", stage_ignition_time);
+	oapiWriteScenario_string(scn, const_cast<char *>(savebuff.c_str()), const_cast<char *>(savevalbuff.c_str()));
+
+	savebuff = "STAGE_STATE";
+	savevalbuff = std::format("{}", stage.at(currentStage).StageState);
+	oapiWriteScenario_string(scn, const_cast<char *>(savebuff.c_str()), const_cast<char *>(savevalbuff.c_str()));
+
+	if (!tlmfile.empty()){
+		savebuff = "TELEMETRY_FILE";
+		savevalbuff = tlmfile;
+		oapiWriteScenario_string(scn, const_cast<char *>(savebuff.c_str()), const_cast<char *>(savevalbuff.c_str()));
+	}
+
+	savebuff = "ALT_STEPS";
+	savevalbuff = std::format("{:.1f},{:.1f},{:.1f},{:.1f}", altsteps.at(0), altsteps.at(1), altsteps.at(2), altsteps.at(3));
+	oapiWriteScenario_string(scn, const_cast<char *>(savebuff.c_str()), const_cast<char *>(savevalbuff.c_str()));
+
+	savebuff = "PEG_PITCH_LIMIT";
+	savevalbuff = std::format("{:.3f}", PegPitchLimit * DEG);
+	oapiWriteScenario_string(scn, const_cast<char *>(savebuff.c_str()), const_cast<char *>(savevalbuff.c_str()));
+
+	savebuff = "PEG_MC_INTERVAL";
+	savevalbuff = std::format("{:.3f}", PegMajorCycleInterval);
+	oapiWriteScenario_string(scn, const_cast<char *>(savebuff.c_str()), const_cast<char *>(savevalbuff.c_str()));
+
+	if (wRamp){
+		savebuff = "RAMP";
+		savevalbuff = "";
+		oapiWriteScenario_string(scn, const_cast<char *>(savebuff.c_str()), const_cast<char *>(savevalbuff.c_str()));
+	}
+
+	if ((HangarMode) && (AttToMSPad)){
+		VECTOR3 pos, dir, rot;
+		GetAttachmentParams(AttToRamp, pos, dir, rot);
+
+		savebuff = "ATTMSPAD";
+		savevalbuff = std::format("{:.3f}", pos.z);
+		oapiWriteScenario_string(scn, const_cast<char *>(savebuff.c_str()), const_cast<char *>(savevalbuff.c_str()));
+	}
+
+}
+
+bool Multistage2026::CheckForDetach(){
+	VECTOR3 Thrust, horThrust;
+	GetThrustVector(Thrust);
+	double Mass = GetMass();
+	HorizonRot(Thrust, horThrust);
+
+	if (horThrust.y > Mass * 9.81){
+		return true;
+	} else {
+		return false;
+	}
+
+}
+
+void Multistage2026::clbkPreStep(double simt, double simdt, double mjd){
+
+	if ((APstat) && (Configuration == 0)){
+		VinkaAutoPilot();
+		MET += simdt;
+		stage.at(0).currDelay = -MET;
+		if (Misc.GNC_Debug == 1) {
+			Guidance_Debug();
+		}
+	}
+
+	if ((wRamp) && (!HangarMode)){
+
+		if (CheckForDetach()){
+			if (GetAttachmentStatus(AttToRamp) != NULL) {
+				vramp->DetachChild(padramp, 0);
+				DelAttachment(AttToRamp);
+				oapiWriteLog(const_cast<char*>("Detached from Launchpad"));
+			}
+			if ((!wLaunchFX) || (GetAltitude() > FX_Launch.CutoffAltitude)) {
+
+				bool deleted = oapiDeleteVessel(hramp);
+				if (deleted)
+				{
+					wRamp = false;
+					NoMoreRamp = true;
+					oapiWriteLog(const_cast<char*>("LaunchPad Deleted from Scenery"));
+				}
+			}
+		}
+	} else if ((HangarMode) && (AttToMSPad)) {
+		if (CheckForDetach()) {
+			DelAttachment(AttToRamp);
+			AttToMSPad = false;
+			oapiWriteLog(const_cast<char*>("Detached from Launchpad"));
+		}
+	}
+
+	if (Configuration == 1) {
+		FLY(simt, simdt, mjd);
+		if (GrowingParticles) {
+			ManageParticles(simdt, true);
+		}
+	}
+	if (wMach){
+		CheckForFX(FXMACH, GetMachNumber());
+	}
+	if ((wVent) && (MET <= 5)){
+		CheckForFX(FXVENT, MET);
+	}
+	if (wFailures){
+		if (CheckForFailure(MET)){
+			Failure();
+		}
+	}
+	return;
+}
+
+void Multistage2026::clbkPostStep(double simt, double simdt, double mjd){
+
+	if ((GetThrusterGroupLevel(THGROUP_MAIN) > 0.95) && (Configuration == 0)) {
+		Configuration = 1;
+		MET = 0;
+	}
+
+	for (int pns = currentPayload; pns < nPayloads; pns++){
+		if (payload.at(pns).live) { CheckForAdditionalThrust(pns); 
+		}
+	}
+
+	if ((Configuration == 1) && (GrowingParticles)) {
+		ManageParticles(simdt, false);
+	}
+
+
+	th_main_level = GetThrusterGroupLevel(THGROUP_MAIN);
+
+	if (wLaunchFX) {
+		if (FX_Launch.CutoffAltitude > 0) {
+			launchFx_level = (-1) / (FX_Launch.CutoffAltitude) * GetAltitude() + 1;
+
+			if (launchFx_level >= 1) { launchFx_level = 1; }
+			if (launchFx_level <= 0) { launchFx_level = 0; }
+		} else {
+			launchFx_level = 1;
+		}
+	} else {
+		launchFx_level = 0;
+	}
+	launchFx_level *= th_main_level;
+	return;
+}
+
+void Multistage2026::CreateLaunchFX()
+{
+	double alpha = 0;
+	for (int i = 1; i <= FX_Launch.N; i++){
+		PARTICLESTREAMSPEC Pss11 = GetProperPS(FX_Launch.Ps1).Pss;
+		alpha = (PI * 2 / FX_Launch.N * (i - 1)) + FX_Launch.Angle * RAD;
+		vramp->AddParticleStream(&Pss11, _V(FX_Launch.Distance * cos(alpha), FX_Launch.Distance * sin(alpha), FX_Launch.H), _V(cos(alpha), sin(alpha), 0), &launchFx_level);
+		PARTICLESTREAMSPEC Pss12 = GetProperPS(FX_Launch.Ps2).Pss;
+		vramp->AddParticleStream(&Pss12, _V(FX_Launch.Distance * cos(alpha), FX_Launch.Distance * sin(alpha), FX_Launch.H), _V(cos(alpha), sin(alpha), 0), &launchFx_level);
+	}
+}
+
+void Multistage2026::CreateHangar(){
+	hhangar = oapiGetVesselByName(const_cast<char*>("MS_Hangar"));
+	if (!oapiIsVessel(hhangar)) {
+		memset(&vshangar, 0, sizeof(vshangar));
+		vshangar.version = 2;
+		GetStatusEx(&vshangar);
+		oapiWriteLog(const_cast<char*>("Creating Hangar"));
+		hhangar = oapiCreateVesselEx("MS_Hangar", "MS_Hangar", &vshangar);
+		vshangar.status = 1;
+		vhangar = (VESSEL4*)oapiGetVesselInterface(hhangar);
+
+		vhangar->DefSetStateEx(&vshangar);
+
+
+		if (wCrawler) {
+			hCrawler = oapiGetVesselByName(const_cast<char*>("MS_Crawler"));
+			if (!oapiIsVessel(hCrawler)){
+				VESSELSTATUS2 vsCrawler;
+				memset(&vsCrawler, 0, sizeof(vsCrawler));
+				vsCrawler.version = 2;
+				vsCrawler = vshangar;
+				vsCrawler.surf_hdg = vshangar.surf_hdg + 180 * RAD;
+
+
+				double rt = 6371010;
+				double earth_circ = rt * 2 * PI;
+				double each_deg = earth_circ / 360;
+				double d_lat = 2.0 * sin(vsCrawler.surf_hdg);
+				double d_lng = -2.0 * cos(vsCrawler.surf_hdg);
+				vsCrawler.surf_lat += d_lat / each_deg * RAD;
+				vsCrawler.surf_lng += d_lng / each_deg * RAD;
+
+				hCrawler = oapiCreateVesselEx("MS_Crawler", "MS_Crawler", &vsCrawler);
+				oapiWriteLog(const_cast<char*>("Crawler Created"));
+			}
+		}
+	}
+
+	vhangar = (VESSEL4*)oapiGetVesselInterface(hhangar);
+	if (!AttToMSPad) {
+		AttToHangar = CreateAttachment(true, _V(0, 0, 0), _V(0, 0, -1), _V(0, 1, 0), "hangar", false);
+		DWORD index;
+		vhangar->clbkGeneric(VMSG_USER, 1, &index);
+		vhangar->AttachChild(GetHandle(), vhangar->GetAttachmentHandle(false, index), AttToHangar);
+		oapiWriteLog(const_cast<char*>("Attached to the Hangar"));
+	} else {
+		OBJHANDLE hPad = oapiGetVesselByName(const_cast<char*>("MS_Pad"));
+		if (oapiIsVessel(hPad))
+		{
+			AttachToMSPad(hPad);
+		}
+	}
+	return;
+}
+
+void Multistage2026::CreateCamera(){
+	//////////////CAMERA CREATION
+	OBJHANDLE hcamera = oapiGetVesselByName(const_cast<char*>("MS_Camera"));
+	if (!oapiIsVessel(hcamera)) {
+		VESSELSTATUS2 vscam;
+		memset(&vscam, 0, sizeof(vscam));
+		vscam.version = 2;
+		if (HangarMode) {
+			vscam = vshangar;
+		} else {
+			vscam = vsramp;
+		}
+
+		vscam.surf_lat += CamDLat * RAD;
+		vscam.surf_lng += CamDLng * RAD;
+		hcamera = oapiCreateVesselEx("MS_Camera", "MS_Camera", &vscam);
+		if (oapiIsVessel(hcamera)){
+			VESSEL4* vcam;
+			vcam = (VESSEL4*)oapiGetVesselInterface(hcamera);
+			vcam->clbkGeneric(VMSG_USER, 1, (void*)GetName());
+		}
+	}
+	return;
+}
+
+void Multistage2026::Ramp(bool alreadyramp){
+	std::string PadName;
+	
+	PadName = std::format("MS_LaunchPad_{}", GetName());
+
+	if (!alreadyramp) {
+		memset(&vsramp, 0, sizeof(vsramp));
+		vsramp.version = 2;
+		GetStatusEx(&vsramp);
+		oapiWriteLog(const_cast<char*>("Creating Launchpad"));
+
+		hramp = oapiCreateVesselEx(PadName.c_str(), Misc.PadModule.c_str(), &vsramp);
+		vsramp.status = 1;
+		vramp = (VESSEL4*)oapiGetVesselInterface(hramp);
+
+		vramp->DefSetStateEx(&vsramp);
+		wRamp = true;
+	} else {
+		//hramp=oapiGetVesselByName("MS_LaunchPad");
+		hramp = oapiGetVesselByName(const_cast<char *>(PadName.c_str()));
+		if (hramp) {
+			vramp = (VESSEL4*)oapiGetVesselInterface(hramp);
+		}
+	}
+
+	AttToRamp = CreateAttachment(true, _V(0, 0, 0), _V(0, 0, -1), _V(0, 1, 0), "pad", false);
+	padramp = vramp->CreateAttachment(false, _V(0, 0, stage[0].height * 0.5 + CogElev), _V(0, -sin(Misc.VerticalAngle), cos(Misc.VerticalAngle)), _V(0, cos(Misc.VerticalAngle), sin(Misc.VerticalAngle)), "pad", false);
+	vramp->AttachChild(GetHandle(), padramp, AttToRamp);
+
+	if (wLaunchFX){
+		CreateLaunchFX();
+	}
+	vramp->SetEnableFocus(false);
+
+	return;
+}
+
+double Multistage2026::GetMET(){
+	return MET;
+}
+
+bool Multistage2026::GetAutopilotStatus(){
+	return APstat;
+}
+
+int Multistage2026::clbkGeneric(int msgid, int prm, void* context){
+
+	switch (msgid) {
+
+		case(2026):
+			if (prm == 2026) {
+				return 2026;
+			} else {
+				return 0;
+			}
+			break;
+		case(VMSG_USER):
+			if (prm == 1){
+				double* met = (double*)(context);
+				*met = GetMET();
+				return 1;
+			} else if (prm == 2){
+				bool* ap = (bool*)(context);
+				*ap = GetAutopilotStatus();
+				return 1;
+			} else if (prm == 3){
+				VECTOR3* Targets = (VECTOR3*)(context);
+				*Targets = GetAPTargets();
+				return 1;
+			}
+			break;
+	}
+
+	return 0;
+}
+
+int Multistage2026::GetMSVersion(){
+	return MSVERSION;
+}
+
+void Multistage2026::CreateDMD(){
+	if (!DMD) {
+		DMD = new DevModeDlg(this);
+		DMD->Open(g_Param.hDLL);
+	}
+}
+
+void Multistage2026::DestroyDMD(){
+	if (DMD) {
+		delete DMD;
+		DMD = 0;
+		hDlg = 0;
+	}
+}
+
+DLLCLBK void InitModule(HINSTANCE hModule){
+	g_Param.hDLL = hModule;
+}
+
+DLLCLBK void ExitModule(HINSTANCE hModule){
+	CloseDlg(hDlg);
+}
+
+DLLCLBK VESSEL* ovcInit(OBJHANDLE hvessel, int flightmodel){
+	return new Multistage2026(hvessel, flightmodel);
+}
+
+DLLCLBK void ovcExit(VESSEL* vessel){
+	if (vessel)delete(Multistage2026*)vessel;
+}
+
+DevModeDlg* dlg;
+
+INT_PTR CALLBACK DlgProcHook(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+
+	if (uMsg == WM_INITDIALOG) {
+		SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG)lParam);
+		((DevModeDlg*)lParam)->hDlg = hWnd;
+	}
+	dlg = (DevModeDlg*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
+	if (dlg) return dlg->DlgProc(hWnd, uMsg, wParam, lParam);
+	else     return oapiDefDialogProc(hWnd, uMsg, wParam, lParam);
+}
+
+INT_PTR CALLBACK DlgProcPld(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+
+	if (uMsg == WM_INITDIALOG) {
+		SetWindowLongPtr(hWnd, GWLP_USERDATA, lParam);
+		((DevModeDlg*)lParam)->hChild[CD_PLD] = hWnd;
+	}
+	dlg = (DevModeDlg*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
+	if (dlg) return dlg->PldProc(hWnd, uMsg, wParam, lParam);
+	else     return false;
+}
+
+INT_PTR CALLBACK DlgProcViewTxt(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+
+	if (uMsg == WM_INITDIALOG) {
+		SetWindowLongPtr(hWnd, GWLP_USERDATA, lParam);
+		((DevModeDlg*)lParam)->hChild[CD_VIEW] = hWnd;
+	}
+	dlg = (DevModeDlg*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
+	if (dlg) return dlg->ViewTxtProc(hWnd, uMsg, wParam, lParam);
+	else     return false;
+}
+
+INT_PTR CALLBACK DlgProcFairing(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+
+	if (uMsg == WM_INITDIALOG) {
+		SetWindowLongPtr(hWnd, GWLP_USERDATA, lParam);
+		((DevModeDlg*)lParam)->hChild[CD_FAIRING] = hWnd;
+	}
+	dlg = (DevModeDlg*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
+	if (dlg) return dlg->FairingProc(hWnd, uMsg, wParam, lParam);
+	else   return false;
+}
+
+INT_PTR CALLBACK DlgProcParticle(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+
+	if (uMsg == WM_INITDIALOG) {
+		SetWindowLongPtr(hWnd, GWLP_USERDATA, lParam);
+		((DevModeDlg*)lParam)->hChild[CD_PARTICLE] = hWnd;
+	}
+	dlg = (DevModeDlg*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
+	if (dlg) return dlg->ParticleProc(hWnd, uMsg, wParam, lParam);
+	else return false;
+}
+
+INT_PTR CALLBACK DlgProcMisc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+
+	if (uMsg == WM_INITDIALOG) {
+		SetWindowLongPtr(hWnd, GWLP_USERDATA, lParam);
+		((DevModeDlg*)lParam)->hChild[CD_MISC] = hWnd;
+	}
+	dlg = (DevModeDlg*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
+	if (dlg) return dlg->MiscProc(hWnd, uMsg, wParam, lParam);
+	else return false;
+}
+
+INT_PTR CALLBACK DlgProcTex(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+
+	if (uMsg == WM_INITDIALOG) {
+		SetWindowLongPtr(hWnd, GWLP_USERDATA, lParam);
+		((DevModeDlg*)lParam)->hChild[CD_TEX] = hWnd;
+	}
+	dlg = (DevModeDlg*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
+	if (dlg) return dlg->TexProc(hWnd, uMsg, wParam, lParam);
+	else return false;
+}
+
+INT_PTR CALLBACK DlgProcBooster(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+
+	if (uMsg == WM_INITDIALOG) {
+		SetWindowLongPtr(hWnd, GWLP_USERDATA, lParam);
+		((DevModeDlg*)lParam)->hChild[CD_BOOSTER] = hWnd;
+	}
+	dlg = (DevModeDlg*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
+	if (dlg) return dlg->BoosterProc(hWnd, uMsg, wParam, lParam);
+	else return false;
+}
+
+INT_PTR CALLBACK DlgProcCurve(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+
+	if (uMsg == WM_INITDIALOG) {
+		SetWindowLongPtr(hWnd, GWLP_USERDATA, lParam);
+		((DevModeDlg*)lParam)->hChild[CD_CURVE] = hWnd;
+	}
+	dlg = (DevModeDlg*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
+	if (dlg) return dlg->CurveProc(hWnd, uMsg, wParam, lParam);
+	else return false;
+}
+
+INT_PTR CALLBACK DlgProcStage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+
+	if (uMsg == WM_INITDIALOG) {
+		SetWindowLongPtr(hWnd, GWLP_USERDATA, lParam);
+		((DevModeDlg*)lParam)->hChild[CD_STAGE] = hWnd;
+	}
+	dlg = (DevModeDlg*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
+	if (dlg) return dlg->StageProc(hWnd, uMsg, wParam, lParam);
+	else return false;
+}
+
+INT_PTR CALLBACK DlgProcUllage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+
+	if (uMsg == WM_INITDIALOG) {
+		SetWindowLongPtr(hWnd, GWLP_USERDATA, lParam);
+		((DevModeDlg*)lParam)->hChild[CD_ULLAGE] = hWnd;
+	}
+	dlg = (DevModeDlg*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
+	if (dlg) return dlg->UllageProc(hWnd, uMsg, wParam, lParam);
+	else return false;
+}
+
+INT_PTR CALLBACK DlgProcInterstage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+
+	if (uMsg == WM_INITDIALOG) {
+		SetWindowLongPtr(hWnd, GWLP_USERDATA, lParam);
+		((DevModeDlg*)lParam)->hChild[CD_INTERSTAGE] = hWnd;
+	}
+	dlg = (DevModeDlg*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
+	if (dlg) return dlg->InterstageProc(hWnd, uMsg, wParam, lParam);
+
+	else return false;
+}
+
+INT_PTR CALLBACK DlgProcLes(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+
+	if (uMsg == WM_INITDIALOG) {
+		SetWindowLongPtr(hWnd, GWLP_USERDATA, lParam);
+		((DevModeDlg*)lParam)->hChild[CD_LES] = hWnd;
+	}
+	dlg = (DevModeDlg*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
+	if (dlg) return dlg->LesProc(hWnd, uMsg, wParam, lParam);
+	else return false;
+}
+
+INT_PTR CALLBACK DlgProcAdapter(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+
+	if (uMsg == WM_INITDIALOG) {
+		SetWindowLongPtr(hWnd, GWLP_USERDATA, lParam);
+		((DevModeDlg*)lParam)->hChild[CD_ADAPTER] = hWnd;
+	}
+	dlg = (DevModeDlg*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
+	if (dlg) return dlg->AdapterProc(hWnd, uMsg, wParam, lParam);
+	else return false;
+}
+
+INT_PTR CALLBACK DlgProcFX(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+
+	if (uMsg == WM_INITDIALOG) {
+		SetWindowLongPtr(hWnd, GWLP_USERDATA, lParam);
+		((DevModeDlg*)lParam)->hChild[CD_FX] = hWnd;
+	}
+	dlg = (DevModeDlg*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
+	if (dlg) return dlg->FXProc(hWnd, uMsg, wParam, lParam);
+	else return false;
+}
+
+INT_PTR CALLBACK DlgProcScenario(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+
+	if (uMsg == WM_INITDIALOG) {
+		SetWindowLongPtr(hWnd, GWLP_USERDATA, lParam);
+		((DevModeDlg*)lParam)->hChild[CD_SCENARIO] = hWnd;
+	}
+	dlg = (DevModeDlg*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
+	if (dlg) return dlg->ScenarioProc(hWnd, uMsg, wParam, lParam);
+	else return false;
 }

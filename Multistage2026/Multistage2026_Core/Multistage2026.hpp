@@ -684,8 +684,8 @@ struct Fuel_Levels {
 
 class Multistage2026 : public VESSEL4{
 
-    //friend class DevModeDlg;
-    //DevModeDlg *DMD
+    friend class DevModeDlg;
+    DevModeDlg *DMD;
 
     public:
 
