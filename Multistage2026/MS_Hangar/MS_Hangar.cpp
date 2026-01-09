@@ -135,7 +135,7 @@ void MS_Hangar::clbkSetClassCaps(FILEHANDLE cfg){
 
     double ro=10;
 
-    std::array<TOUCHDOWNVTX, 4> td;
+	std::array<TOUCHDOWNVTX, 4> td = {};
 
     for(int i = 0; i < 4; i++){
         td.at(i).damping = 3e5;

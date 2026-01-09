@@ -81,8 +81,8 @@ void Multistage2026::parseInterstages(const std::string filename, int parsingsta
 	std::string logbuff = std::format("{}: Number of Interstages in the ini file: {}", GetName(), nInterstages);
 	oapiWriteLog(const_cast<char *>(logbuff.c_str()));
 
-	return;
 }
+
 void Multistage2026::parseLes(const std::string filename) {
 	
 	oapiWriteLogV("%s: parseLes() filename=%s", GetName(), filename.c_str());
@@ -171,7 +171,7 @@ void Multistage2026::parseStages(const std::string filename) {
 	std::string engtxt;
 
 	int i;
-	for (i = 0; i <= 10; i++) {
+	for (i = 0; i < 10; i++) {
 
 		//check for interstage!
 		parseInterstages(filename, i);
@@ -216,8 +216,6 @@ void Multistage2026::parseStages(const std::string filename) {
 		stage.at(i).pref = std::stof(ini.GetValue(stagetxt.c_str(), "pressure_sl", "0.0"));
 
 		//--------------------------------------------------------------------------------------------------------------	
-
-
 
 
 		stage.at(i).pitchthrust = 2 * std::stof(ini.GetValue(stagetxt.c_str(), "pitchthrust", "0.0"));
@@ -285,7 +283,6 @@ void Multistage2026::parseStages(const std::string filename) {
 			stage.at(i).wps2 = true;
 		}
 
-		stage[i].ParticlesPackedToEngine = stoi(dataparsed);
 
 		stage.at(i).ParticlesPackedToEngine = std::stoi(ini.GetValue(stagetxt.c_str(), "particles_packed_to_engine", "0"));
 		if(stage.at(i).ParticlesPackedToEngine != 0){
@@ -535,14 +532,15 @@ void Multistage2026::parseBoosters(const std::string filename) {
 			}
 		}
 
-		if (booster[b].meshname.at(0) == '0') {
+		if (booster.at(b).meshname.empty()) {
 			nBoosters = b;
 			logbuff = std::format("{}: Number of boosters group in the ini file: {}", GetName(), nBoosters);
 			oapiWriteLog(const_cast<char *>(logbuff.c_str()));
 			break;
 		}
-
+		nBoosters = b + 1;
 	}
+	oapiWriteLogV("CONTEO FINAL: nBoosters detectados = %i", nBoosters);
 }
 
 void Multistage2026::parseFairing(const std::string filename) {
@@ -599,108 +597,84 @@ void Multistage2026::parseFairing(const std::string filename) {
 
 }
 
-void Multistage2026::ArrangePayloadMeshes(const std::string data, int pnl) {
-	
-	std::string meshnm(data);
+void Multistage2026::ArrangePayloadMeshes(const std::string &data, int pnl) {
+    if (pnl < 0 || pnl >= 10) return;
 
-	std::string meshnm0, meshnm1, meshnm2, meshnm3, meshnm4;
-	std::size_t findFirstSC = meshnm.find_first_of(";");
-	if (findFirstSC != meshnm.npos) {
-		meshnm0 = meshnm.substr(0, findFirstSC);
-		payload.at(pnl).meshname0 = meshnm0;
-		std::size_t findSecondSC = meshnm.find_first_of(";", findFirstSC + 1);
-		if (findSecondSC != meshnm.npos) {
-			meshnm1 = meshnm.substr(findFirstSC + 1, findSecondSC - findFirstSC - 1);
-			std::size_t findThirdSC = meshnm.find_first_of(";", findSecondSC + 1);
-			if (findThirdSC != meshnm.npos) {
-				meshnm2 = meshnm.substr(findSecondSC + 1, findThirdSC - findSecondSC - 1);
-				std::size_t findFourthSC = meshnm.find_first_of(";", findThirdSC + 1);
-				if (findFourthSC != meshnm.npos) {
-					meshnm3 = meshnm.substr(findThirdSC + 1, findFourthSC - findThirdSC - 1);
-					meshnm4 = meshnm.substr(findFourthSC + 1, meshnm.npos);
-					payload.at(pnl).nMeshes = 5;
-				}
-				else { meshnm3 = meshnm.substr(findThirdSC + 1, meshnm.npos); payload.at(pnl).nMeshes = 4; }
-			}
-			else { meshnm2 = meshnm.substr(findSecondSC + 1, meshnm.npos); payload.at(pnl).nMeshes = 3; }
-		}
-		else { meshnm1 = meshnm.substr(findFirstSC + 1, meshnm.npos); payload.at(pnl).nMeshes = 2; }
-	}
-	else { meshnm0 = meshnm.substr(0, meshnm.npos); payload.at(pnl).nMeshes = 1; }
-
-	payload.at(pnl).meshname0 = meshnm0;
-
-	if (payload.at(pnl).nMeshes == 5) {
-		payload.at(pnl).meshname1 = meshnm1;
-		payload.at(pnl).meshname2 = meshnm2;
-		payload.at(pnl).meshname3 = meshnm3;
-		payload.at(pnl).meshname4 = meshnm4;
-	}
-	else if (payload.at(pnl).nMeshes == 4) {
-		payload.at(pnl).meshname1 = meshnm1;
-		payload.at(pnl).meshname2 = meshnm2;
-		payload.at(pnl).meshname3 = meshnm3;
-	}
-	else if (payload.at(pnl).nMeshes == 3) {
-		payload.at(pnl).meshname1 = meshnm1;
-		payload.at(pnl).meshname2 = meshnm2;
-	}
-	else if (payload.at(pnl).nMeshes == 2) {
-		payload.at(pnl).meshname1 = meshnm1;
-	}
-
-}
-
-void Multistage2026::ArrangePayloadOffsets(const std::string &data, int pnl) {
     std::stringstream ss(data);
     std::string token;
     int idx = 0;
 
-    while (std::getline(ss, token, ';') && idx < payload[pnl].nMeshes) {
-        token.erase(std::remove(token.begin(), token.end(), ' '), token.end());
-        payload[pnl].off.at(idx++) = CharToVec(token);
+    auto& p = payload.at(pnl);
+
+    std::string* meshNames[5] = { &p.meshname0, &p.meshname1, &p.meshname2, &p.meshname3, &p.meshname4 };
+
+    for(int i = 0; i < 5; i++) *(meshNames[i]) = "";
+
+    while (std::getline(ss, token, ';') && idx < 5) {
+        token.erase(0, token.find_first_not_of(" \t\r\n"));
+        token.erase(token.find_last_not_of(" \t\r\n") + 1);
+
+        if (!token.empty()) {
+            *(meshNames[idx]) = token;
+            idx++;
+        }
+    }
+
+    p.nMeshes = idx;
+}
+
+void Multistage2026::ArrangePayloadOffsets(const std::string &data, int pnl) {
+    if (pnl < 0 || pnl >= 10) return;
+
+    std::stringstream ss(data);
+    std::string token;
+    int idx = 0;
+
+    const int maxIdx = 5; 
+
+    while (std::getline(ss, token, ';') && idx < maxIdx) {
+        token.erase(0, token.find_first_not_of(" \t\r\n"));
+        token.erase(token.find_last_not_of(" \t\r\n") + 1);
+
+        if (token.empty()) continue;
+
+        payload.at(pnl).off.at(idx) = CharToVec(token);
+        idx++;
     }
 }
 
 void Multistage2026::parsePayload(const std::string filename) {
+    oapiWriteLogV("%s: parsePayload() filename=%s", GetName(), filename.c_str());
 
-	oapiWriteLogV("%s: parsePayload() filename=%s", GetName(), filename.c_str());
-
-	CSimpleIniA ini(true, false, false);
-
-	if (ini.LoadFile(filename.c_str()) < 0) {
+    CSimpleIniA ini(true, false, false);
+    if (ini.LoadFile(filename.c_str()) < 0) {
         oapiWriteLogV("%s: Failed to load INI configuration file: %s", GetName(), filename.c_str());
         return;
     }
-	
-	std::string payloadtxt;
+    
+    std::string payloadtxt;
 
-	int pnl;
+    for (int pnl = 0; pnl < 10; pnl++) {
 
-	for (pnl = 0; pnl <= 10; pnl++) {
+        payloadtxt = std::format("PAYLOAD_{}", pnl + 1);
 
-		payloadtxt = std::format("PAYLOAD_{}", pnl + 1);
+        std::string meshlist = ini.GetValue(payloadtxt.c_str(), "meshname", "");
 
-		payload.at(pnl).nMeshes = 0;
+        if (meshlist.empty() || meshlist == "0") {
+            nPayloads = pnl;
+            oapiWriteLogV("%s: Number of Payloads in the ini file: %i", GetName(), nPayloads);
+            break;
+        }
 
-		if(!ini.GetSection(payloadtxt.c_str())){
-			nPayloads = pnl;
-			oapiWriteLogV("%s: Number of Payloads in the ini file: %i", GetName(), nPayloads);
-			break;
-		}
+        payload.at(pnl).meshname = meshlist;
 
-		payload.at(pnl).meshname = ini.GetValue(payloadtxt.c_str(), "meshname", "");
+        ArrangePayloadMeshes(meshlist, pnl);
 
-		std::string meshlist = ini.GetValue(payloadtxt.c_str(), "meshname", "");
-
-		if(!meshlist.empty()){
-			ArrangePayloadMeshes(meshlist.data(), pnl);
-		} else {
-			payload.at(pnl).nMeshes = 0;
-		}
-
-
-		ArrangePayloadOffsets(meshlist, pnl);
+        // 5. Procesamos los offsets
+        // Ahora que ArrangePayloadMeshes ya definió cuántas mallas hay, 
+        // ArrangePayloadOffsets llenará el array 'off' correctamente.
+        std::string off_vec = ini.GetValue(payloadtxt.c_str(), "off", "0,0,0");
+        ArrangePayloadOffsets(off_vec, pnl);
 
 		payload.at(pnl).height = std::stof(ini.GetValue(payloadtxt.c_str(), "height", "0.0"));
 
@@ -796,7 +770,7 @@ void Multistage2026::parseParticle(const std::string filename) {
 			Particle.at(npart).Pss.ltype = PARTICLESTREAMSPEC::EMISSIVE;
 		} else if (dataparsed == "DIFFUSE"){
 			Particle.at(npart).Pss.ltype = PARTICLESTREAMSPEC::DIFFUSE;
-		} else {
+		} else if(dataparsed.empty()){
 			oapiWriteLogV("%s: WARNING! PARTICLE STREAM LTYPE NOT DEFINED! USING EMISSIVE", GetName());
 			Particle.at(npart).Pss.ltype = PARTICLESTREAMSPEC::EMISSIVE;
 		}
@@ -812,7 +786,7 @@ void Multistage2026::parseParticle(const std::string filename) {
 			Particle.at(npart).Pss.levelmap = PARTICLESTREAMSPEC::LVL_PLIN;
 		} else if (dataparsed == "LVL_PSQRT"){
 			Particle.at(npart).Pss.levelmap = PARTICLESTREAMSPEC::LVL_PSQRT;
-		} else {
+		} else if(dataparsed.empty()){
 			oapiWriteLogV("%s: WARNING! PARTICLE STREAM LEVEL MAP NOT DEFINED! USING LVL_LIN", GetName());
 			Particle.at(npart).Pss.levelmap = PARTICLESTREAMSPEC::LVL_LIN;
 		}
@@ -854,7 +828,7 @@ void Multistage2026::parseParticle(const std::string filename) {
 		dataparsed = ini.GetValue(partxt.c_str(), "GrowFactor_rate", "0.0");
 		Particle.at(npart).GrowFactor_rate = stof(dataparsed);
 
-		if((Particle.at(npart).GrowFactor_rate == 0) && (Particle.at(npart).GrowFactor_size == 0)){
+		if((Particle.at(npart).GrowFactor_rate == 0.0) && (Particle.at(npart).GrowFactor_size == 0.0)){
 			Particle.at(npart).Growing = false;
 		} else {
 			Particle.at(npart).Growing = true;
@@ -988,41 +962,27 @@ void Multistage2026::parseFXLaunch(const std::string filename){
 }
 
 
-void Multistage2026::parseTexture(const std::string filename){
+void Multistage2026::parseTexture(const std::string filename) {
+    CSimpleIniA ini(true, false, false);
+    if (ini.LoadFile(filename.c_str()) < 0) return;
 
-	oapiWriteLogV("%s: parseTexture() filename=%s", GetName(), filename.c_str());
+    nTextures = 0;
+    for (int texn = 0; texn < 16; texn++) {
+        std::string bufftxt = std::format("TEX_{}", texn + 1);
+        std::string val = ini.GetValue("TEXTURE_LIST", bufftxt.c_str(), "");
 
-	CSimpleIniA ini(true, false, false);
+        val.erase(0, val.find_first_not_of(" \t\r\n"));
+        val.erase(val.find_last_not_of(" \t\r\n") + 1);
 
-	if (ini.LoadFile(filename.c_str()) < 0) {
-        oapiWriteLogV("%s: Failed to load INI configuration file: %s", GetName(), filename.c_str());
-        return;
+        if (val.empty()) break;
+
+        tex.TextureName.at(texn) = val;
+        tex.hTex.at(texn) = oapiRegisterExhaustTexture(const_cast<char*>(val.c_str()));
+        
+        nTextures = texn + 1;
+        oapiWriteLogV("%s: Texture n.%i Loaded: %s (Handle: %p)", 
+            GetName(), nTextures, val.c_str(), tex.hTex.at(texn));
     }
-
-	std::string textxt = "TEXTURE_LIST";
-	std::string bufftxt;
-
-	int texn;
-	for (texn = 0; texn < 16; texn++) {
-
-		bufftxt = std::format("TEX_%i", texn + 1);
-
-		dataparsed = ini.GetValue(textxt.c_str(), bufftxt.c_str(), "");
-
-		if(dataparsed.empty()){
-			nTextures = texn;
-			break;
-		}
-		
-		std::string checktxt;
-		tex.TextureName.at(texn) = dataparsed;
-		checktxt = dataparsed;
-
-		oapiWriteLogV("%s: Texture n.%i Loaded %s", GetName(), texn + 1, checktxt.c_str());
-		tex.hTex.at(texn) = oapiRegisterExhaustTexture(const_cast<char *>(checktxt.c_str()));
-	}
-
-	return;
 }
 
 
@@ -1072,7 +1032,7 @@ void Multistage2026::parseMisc(const std::string filename){
 	Misc.drag_factor = stof(dataparsed);
 
 	//------------------------------------------------------------------------------------------------------------
-	dataparsed = ini.GetValue(Misctxt.c_str(), "PAD_MODULE", "0.0");
+	dataparsed = ini.GetValue(Misctxt.c_str(), "PAD_MODULE", "");
 	if (dataparsed.empty()){
 		Misc.PadModule = "EmptyModule";
 	} else {
@@ -1084,8 +1044,6 @@ void Multistage2026::parseMisc(const std::string filename){
 
 
 bool Multistage2026::parseinifile(const std::string filename) {
-	int r;
-
 	parseStages(filename);
 	parseBoosters(filename);
 	//parseInterstages(filename);
@@ -1099,7 +1057,6 @@ bool Multistage2026::parseinifile(const std::string filename) {
 	parseFXVent(filename);
 	parseFXLaunch(filename);
 	parseAdapter(filename);
-	//parseSound(filename);
 	return true;
 }
 
@@ -1240,7 +1197,6 @@ void Multistage2026::parseGuidanceFile(const std::string filename) {
 				}
 
 				std::size_t foundDisable = line.find("disable");
-				std::size_t foundPlay = line.find("playsound");
 
 				if (foundDisable != std::string::npos) {
 					std::size_t foundDisPitch = line.find("pitch");
@@ -1255,12 +1211,6 @@ void Multistage2026::parseGuidanceFile(const std::string filename) {
 						Gnc_step.at(nsteps).Comand = "disablejettison";
 					}
 
-				} else if (foundPlay != std::string::npos) {
-					std::size_t findopen = line.find_first_of("(");
-					std::size_t findclose = line.find_first_of(")");
-					std::string filename = line.substr(findopen + 1, findclose - findopen - 1);
-					Gnc_step.at(nsteps).Comand = "playsound";
-					//filename.copy(Gnc_step.at(nsteps).trchar, MAXLEN, 0);
 				}
 				++nsteps;
 			} else {

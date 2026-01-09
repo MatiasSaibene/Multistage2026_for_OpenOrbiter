@@ -28,6 +28,8 @@ Graph::Graph(){
         points.at(i).y = 0;
     }
 
+    original_points = {};
+
 }
 
 Graph::~Graph(){

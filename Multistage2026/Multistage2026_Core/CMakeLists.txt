@@ -12,34 +12,36 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 # Variables de ruta
 set(ORBITER_ROOT "C:/Users/Matias_Saibene/Desktop/OpenOrbiter2024")
 set(ORBITER_SDK_INCLUDE "${ORBITER_ROOT}/Orbitersdk/include")
-set(ORBITER_SDK_LIB_RELEASE "${ORBITER_ROOT}/Orbitersdk/lib/*.lib")
-set(ORBITER_SDK_LIB_DEBUG "${ORBITER_ROOT}/Orbitersdk/lib_debug/*.lib")
+#set(ORBITER_SDK_LIB_RELEASE "${ORBITER_ROOT}/Orbitersdk/lib/*.lib")
+#set(ORBITER_SDK_LIB_DEBUG "${ORBITER_ROOT}/Orbitersdk/lib_debug/*.lib")
+set(ORBITER_COMMON_DIR "${ORBITER_ROOT}/Orbitersdk/samples/Common/Dialog")
 set(ORBITER_MODULES "${ORBITER_ROOT}/Modules")
 
+file(GLOB ORBITER_SDK_LIBS "${ORBITER_ROOT}/Orbitersdk/lib_debug/*.lib")
 
 # Archivos fuente y encabezados
 set(SOURCES
-    ##DevModeCtrl.cpp
-    ##Graph.cpp
-    ##Guidance.cpp
-    Multistage2015.cpp
+    DevDlg.cpp
+    DevModeCtrl.cpp
+    Graph.cpp
+    Guidance.cpp
+    Multistage2026.cpp
     parser.cpp
-    ##Particles.cpp
-    ##peg.cpp
-    ##test.cpp
-    ##WriteIni.cpp
-    Resources.rc
+    Particles.cpp
+    peg.cpp
+    WriteIni.cpp
+    Resources.rc    
+    ${ORBITER_COMMON_DIR}/TabDlg.cpp
 )
 
 set(HEADERS
-    ##DevDlg.hpp
-    ##DeveloperEditor.hpp
-    ##DevModeCtrl.hpp
-    ##Graph.hpp
-    Multistage2015.hpp
-    resource.hpp
-    ##TabDlg.hpp
-    ##WriteIni.h
+    DevDlg.hpp
+    DevModeCtrl.hpp
+    Graph.hpp
+    Multistage2026.hpp
+    resource.h
+    WriteIni.hpp
+    ${ORBITER_COMMON_DIR}/TabDlg.h
 )
 
 # Crear el objetivo como una librería compartida (DLL)
@@ -50,13 +52,18 @@ add_library(${PROJECT_NAME} SHARED
 
 # Rutas de inclusión
 target_include_directories(${PROJECT_NAME} PRIVATE
-    "${ORBITER_SDK_INCLUDE}"
-    "${ORBITER_SOURCE}"
+    ${ORBITER_SDK_INCLUDE}
+    ${ORBITER_SOURCE}
+    ${ORBITER_COMMON_DIR}
 )
 
 # Enlace a librerías: versiones específicas por configuración
 target_link_libraries(${PROJECT_NAME}
-   ${ORBITER_SDK_LIB_DEBUG}
+   ${ORBITER_SDK_LIBS}
+    uxtheme.lib
+    comctl32.lib
+    user32.lib
+    gdi32.lib
 )
 
 if(MSVC)

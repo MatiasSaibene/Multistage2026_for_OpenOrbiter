@@ -15,7 +15,7 @@ set(ORBITER_ROOT "C:/Users/Matias_Saibene/Desktop/OpenOrbiter2024")
 
 # Submódulos
 ## set(MULTISTAGE2015_MFD_PATH ${ORBITER_ROOT}/Orbitersdk/samples/Multistage2015_MFD)
-## set(STAGE2010_PATH ${ORBITER_ROOT}/Orbitersdk/samples/Stage_dll_2010)
+set(STAGE2010_PATH ${ORBITER_ROOT}/Orbitersdk/samples/Stage_dll_2010)
 
 # Salidas
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Multistage2026_BIN)
@@ -31,7 +31,7 @@ foreach(output_config ${CMAKE_CONFIGURATION_TYPES})
 endforeach()
 
 # Subdirectorios internos
-##add_subdirectory(Multistage2026_Core)
+add_subdirectory(Multistage2026_Core)
 add_subdirectory(EmptyModule)
 add_subdirectory(Crawler)
 add_subdirectory(MS_Hangar)
@@ -40,4 +40,4 @@ add_subdirectory(boom)
 
 # Subdirectorios externos (con carpetas de build distintas)
 ## add_subdirectory(${MULTISTAGE2015_MFD_PATH} "${CMAKE_BINARY_DIR}/build_MFD")
-## add_subdirectory(${STAGE2010_PATH} "${CMAKE_BINARY_DIR}/build_stage2010")
+add_subdirectory(${STAGE2010_PATH} "${CMAKE_BINARY_DIR}/build_stage2010")

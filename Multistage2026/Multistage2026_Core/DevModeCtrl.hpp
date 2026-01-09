@@ -1,9 +1,12 @@
 #pragma once
 #include "Multistage2026.hpp"
+#include "WriteIni.hpp"
 #include <array>
-#include <windef.h>
+#include <Windows.h>
+#include <memory>
 #define STRICT
 #include "../../include/Orbitersdk.h"
+#include "Graph.hpp"
 
 constexpr int CD_PLD{0};
 constexpr int CD_STAGE{1};
@@ -28,6 +31,9 @@ class DevModeDlg {
 public:
 	DevModeDlg(Multistage2026 *_Ms26);
 	~DevModeDlg();
+
+	DevModeDlg(const DevModeDlg&) = delete;
+	DevModeDlg& operator=(const DevModeDlg&) = delete;
 
 	enum ItemType{Stage, Booster, Payload, Fairing, Misc, Texture, Interstage, Particle, Empty};
 
@@ -57,6 +63,8 @@ public:
 	HWND hDlg;
 
 private:
+
+	WriteIni WriteIni;
 
 	ItemType Viewing;
 
@@ -95,7 +103,7 @@ private:
 	void PopulateBoosters(UINT iddialog, UINT id);
 	void PopulateStages(UINT iddialog, UINT id);
 	std::string logbuff;
-	char* PickFileName(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, bool NoExtension);
+	std::string PickFileName(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, bool NoExtension);
 	//	void ArrangePayloadMeshes(char data[MAXLEN], int pnl);
 	//	void ArrangePayloadOffsets(char data[MAXLEN], int pnl);
 	void AddItem(ItemType IT);
@@ -104,8 +112,8 @@ private:
 	void ReverseOffsets();
 	char CompleteFileIniName[MAX_PATH];
 
-	Graph *Curve;
-	void RefreshGraph(Graph* graph, int GraphId);
+	std::unique_ptr<Graph> Curve;
+	void RefreshGraph(std::unique_ptr<Graph> graph, int GraphId);
     std::array<POINT, 10> point;
 	UINT BoosterCurveNpts(BOOSTER bst);
 	void BoosterCurvePointActive(UINT npts);

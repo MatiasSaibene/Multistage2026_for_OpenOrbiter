@@ -4,7 +4,29 @@
 #define ORBITER_MODULE
 
 //Creation
-MS_Crawler::MS_Crawler(OBJHANDLE hObj, int fmodel) : VESSEL4(hObj, fmodel){
+MS_Crawler::MS_Crawler(OBJHANDLE hObj, int fmodel) : VESSEL4(hObj, fmodel) {
+
+	Rot1 = { nullptr };
+
+	Rot2 = { nullptr };
+
+	Rot3 = { nullptr };
+
+	Rot4 = { nullptr };
+
+	Tr1 = { nullptr };
+
+	Tr2 = { nullptr };
+
+	Tr3 = { nullptr };
+
+	Tr4 = { nullptr };
+
+	animCing = {};
+
+	lights = {nullptr};
+
+	Initials = {};
 
     FWD = false;
 

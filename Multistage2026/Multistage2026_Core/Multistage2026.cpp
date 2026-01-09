@@ -92,6 +92,9 @@ Multistage2026::Multistage2026(OBJHANDLE hObj, int fmodel) :VESSEL4(hObj, fmodel
 		stage.at(i).defpitch = false;
 		stage.at(i).defroll = false;
 		stage.at(i).defyaw = false;
+		stage.at(i).thrust = 0.0;
+		stage.at(i).isp = 0.0;
+		stage.at(i).tank = nullptr;
 		payload.at(i) = PAYLOAD();
 	}
 
@@ -113,6 +116,7 @@ Multistage2026::Multistage2026(OBJHANDLE hObj, int fmodel) :VESSEL4(hObj, fmodel
 	pitchdisabled = false;
 
 	Gnc_running = 0;
+
 	spinning = false;
 
 	lvl = 1.0;
@@ -588,7 +592,7 @@ Multistage2026::Multistage2026(OBJHANDLE hObj, int fmodel) :VESSEL4(hObj, fmodel
 
 	z = 0.0;
 
-	tex = {0};
+	tex = {};
 }
 
 Multistage2026::~Multistage2026() {
@@ -638,23 +642,26 @@ bool Multistage2026::IsOdd(int integer)
 		return false;
 }
 
-//transforms std::string variable into VECTOR3
 VECTOR3 Multistage2026::CharToVec(const std::string& str) {
-    
-    std::string s = str;
-    s.erase(std::remove(s.begin(), s.end(), '('), s.end());
-    s.erase(std::remove(s.begin(), s.end(), ')'), s.end());
+    std::string clean;
 
-    
-    std::replace(s.begin(), s.end(), ';', ',');
+    for (char c : str) {
+        if (isdigit(c) || c == '.' || c == '-' || c == '+' || c == 'e' || c == 'E') {
+            clean += c;
+        } else if (c == ',' || c == ';' || c == ' ' || c == '(' || c == ')') {
+            clean += ' ';
+        }
+    }
 
-    std::stringstream ss(s);
-    double x = 0.0, y = 0.0, z = 0.0;
-    char comma;
-
-    ss >> x >> comma >> y >> comma >> z;
-
-    return _V(x, y, z);
+    std::stringstream ss(clean);
+    double val[3] = {0, 0, 0};
+    std::string temp;
+    int i = 0;
+    while (ss >> temp && i < 3) {
+        try { val[i] = std::stod(temp); } catch (...) { val[i] = 0.0; }
+        i++;
+    }
+    return _V(val[0], val[1], val[2]);
 }
 
 //transforms std::string variable into VECTOR4F
@@ -721,9 +728,10 @@ void Multistage2026::ResetVehicle(VECTOR3 hangaranimsV = _V(1.3, -10, 57.75), bo
 	}
 
 
-	std::filesystem::path tempFile = OrbiterRoot + "\\" + fileini;
-    oapiWriteLogV("%s: Config File: %s", GetName(), tempFile.c_str());
-	parseinifile(tempFile.string());
+	std::filesystem::path fullPath = std::filesystem::path(OrbiterRoot) / fileini;
+
+	oapiWriteLogV("%s: Config File: %s", GetName(), fullPath.string().c_str());
+	parseinifile(fullPath.string());
 
 	currentBooster = loadedCurrentBooster;
 	currentInterstage = loadedCurrentInterstage;
@@ -847,7 +855,7 @@ double Multistage2026::StageRemDv(int dvstage)
 
 //Returns Remaining Stage Burn Time
 double Multistage2026::RemBurnTime(int rbtstage, double level = 1){
-	double BT;
+	double BT = 0.0;
 	BT = stage.at(rbtstage).isp * GetPropellantMass(stage.at(rbtstage).tank) / (stage.at(rbtstage).thrust * level);
 
 	return BT;
@@ -855,7 +863,7 @@ double Multistage2026::RemBurnTime(int rbtstage, double level = 1){
 
 //Returns Remaining Boosters Group Burn Time
 double Multistage2026::BoosterRemBurnTime(int rbtbooster, double level = 1) {
-	double BT;
+	double BT = 0.0;
 	BT = booster.at(rbtbooster).isp * GetPropellantMass(booster.at(rbtbooster).tank) / ((booster.at(rbtbooster).thrust * booster.at(rbtbooster).N) * level);
 
 	return BT;
@@ -1170,7 +1178,7 @@ void Multistage2026::CreateMainThruster() {
 	for (i = 0; i < stage.at(currentStage).nEngines; i++) {
 
 		exhaustN.at(currentStage).at(i) = AddExhaust(stage.at(currentStage).th_main_h.at(i), 10 * stage.at(currentStage).eng_diameter * stage.at(currentStage).engV4.at(i).t, stage.at(currentStage).eng_diameter * stage.at(currentStage).engV4.at(i).t, stage.at(currentStage).eng.at(i), operator*(stage.at(currentStage).eng_dir, -1), GetProperExhaustTexture(stage.at(currentStage).eng_tex));
-
+		oapiWriteLogV("TEXTURELOADED=%s", stage.at(currentStage).eng_tex.c_str());
 		if (!stage.at(currentStage).ParticlesPacked) {
 			if (stage.at(currentStage).wps1) {
 				PARTICLESTREAMSPEC Pss1 = GetProperPS(stage.at(currentStage).eng_pstream1).Pss;
@@ -1252,8 +1260,7 @@ void Multistage2026::CreateMainThruster() {
 
 	LightEmitter* le = AddPointLight(stage.at(currentStage).eng.at(0), 200, 1e-3, 0, 2e-3, col_d, col_s, col_a);
 	le->SetIntensityRef(&th_main_level);
-
-	return;
+	
 }
 
 //Get Boosters Position given group number and booster number inside the group
@@ -1414,22 +1421,39 @@ void Multistage2026::LoadMeshes() {
 
 		//}
 	}
-	int qb;
-	for (qb = currentBooster; qb < nBoosters; qb++) {
+	for (int qb = currentBooster; qb < nBoosters; qb++) {
 		VECTOR3 bpos = booster.at(qb).off;
-		VECTOR3 bposxy = bpos;
-		bposxy.z = 0;
-		double bro = length(bposxy);
-		int NN;
-		for (NN = 1; NN < booster.at(qb).N + 1; NN++) {
+
+		// N es 2, as� que n ir� de 0 a 1
+		for (int n = 0; n < booster.at(qb).N; n++) {
+
+			// NN ser� 1 y 2 para el nombre del archivo
+			int NN = n + 1;
 			std::string boosmhname = std::format("{}_{}", booster.at(qb).meshname, NN);
 
-			double arg = booster.at(qb).angle * RAD + (NN - 1) * 2 * PI / booster.at(qb).N;
-			VECTOR3 bposdef = _V(bpos.x * cos(arg) - bpos.y * sin(arg), bpos.x * sin(arg) + bpos.y * cos(arg), bpos.z);
-			booster.at(qb).msh_h.at(NN) = oapiLoadMeshGlobal(boosmhname.c_str());
-			oapiWriteLogV("%s: Booster Mesh Preloaded: %s", GetName(), boosmhname.c_str());
-			booster.at(qb).msh_idh.at(NN) = AddMesh(booster.at(qb).msh_h.at(NN), &bposdef);
-			oapiWriteLogV("%s: Booster Mesh Added Mesh: %s @ x:%.3f y:%.3f z:%.3f", GetName(), boosmhname.c_str(), bposdef.x, bposdef.y, bposdef.z);
+			// --- C�LCULO DE POSICI�N ---
+			double arg = (booster.at(qb).angle * RAD) + (n * 2.0 * PI / booster.at(qb).N);
+			VECTOR3 bposdef = _V(
+				bpos.x * cos(arg) - bpos.y * sin(arg),
+				bpos.x * sin(arg) + bpos.y * cos(arg),
+				bpos.z
+			);
+
+			// --- CARGA DE MALLA ---
+			// Usamos n (0 o 1) para el vector interno de la clase
+			MESHHANDLE hMsh = oapiLoadMeshGlobal(boosmhname.c_str());
+
+			if (hMsh != NULL) {
+				booster.at(qb).msh_h.at(n) = hMsh;
+				booster.at(qb).msh_idh.at(n) = AddMesh(hMsh, &bposdef);
+
+				oapiWriteLogV("%s: Booster %d.%d Mesh Added: %s @ x:%.3f y:%.3f z:%.3f",
+					GetName(), qb + 1, NN, boosmhname.c_str(), bposdef.x, bposdef.y, bposdef.z);
+			}
+			else {
+				oapiWriteLogV("%s: ERROR: Could not find booster mesh file: Meshes\\%s.msh",
+					GetName(), boosmhname.c_str());
+			}
 		}
 	}
 
@@ -1684,23 +1708,17 @@ PARTICLE Multistage2026::GetProperPS(const std::string &name){
 }
 
 //returns the texture to be used or the empty one
-SURFHANDLE Multistage2026::GetProperExhaustTexture(const std::string &name){
+SURFHANDLE Multistage2026::GetProperExhaustTexture(const std::string &name) {
+    
+	for (int nt = 0; nt < nTextures; nt++){
 
-	std::string checktxt;
-	int nt = 0;
-	int k;
-	for (nt = 0; nt < nTextures; nt++) {
-		checktxt = tex.TextureName.at(nt);
-		
-		if (name != checktxt) {
+        if (name == tex.TextureName.at(nt)){
 
-			return tex.hTex.at(nt);
-		}
+            return tex.hTex.at(nt);
+        }
 
-	}
-
-	return nullptr;
-
+    }
+    return nullptr;
 }
 
 //creates Ullage engine and exhausts
@@ -2169,18 +2187,28 @@ void Multistage2026::Jettison(int type, int current){
 
 	switch (type){
 
-		case TBOOSTER:
-
+	case TBOOSTER:
 			Spawn(type, current);
 
-			int i;
-			for (i = 1; i < booster.at(current).N + 1; i++) {
-				DelMesh(booster.at(current).msh_idh.at(i));
+			for (int i = 0; i < booster.at(current).N; i++) {
+				if (i < booster.at(current).msh_idh.size()) {
+					DelMesh(booster.at(current).msh_idh.at(i));
+				}
 			}
 
-			DelThrusterGroup(booster.at(current).Thg_boosters_h, false);
+			if (booster.at(current).Thg_boosters_h != nullptr) {
+				DelThrusterGroup(booster.at(current).Thg_boosters_h, false);
+				booster.at(current).Thg_boosters_h = nullptr;
+			}
+
+			for (int j = 0; j < booster.at(current).th_booster_h.size(); j++) {
+				booster.at(current).th_booster_h.at(j) = nullptr;
+			}
 
 			DelPropellantResource(booster.at(current).tank);
+			booster.at(current).tank = nullptr;
+
+		
 			currentBooster += 1;
 
 			UpdateMass();
@@ -2956,8 +2984,7 @@ void Multistage2026::clbkSetClassCaps(FILEHANDLE cfg){
 	//Default ParticleStreams Definitions:
 
 	// DEF CONTRAIL
-	std::string transfer;
-	transfer = "Contrail";
+	std::string transfer = "Contrail";
 
 	Particle.at(13).ParticleName = transfer;
 	Particle.at(13).Pss.flags = 0;
@@ -3025,17 +3052,18 @@ void Multistage2026::clbkLoadStateEx(FILEHANDLE scn, void* vs){
 
 	oapiWriteLog(const_cast<char*>("Load State Started"));
 	std::string line;
-	char *cp_line;
+	char *cp_line = nullptr;
 
 	double batt_trans = 0;
 	bool loadedbatts = false;
 	stepsloaded = false;
 
 	while (oapiReadScenario_nextline(scn, cp_line)){
-		line = cp_line;
+		if (!cp_line || cp_line[0] == '\0') continue;
+		line = std::string(cp_line);
 
 		if (line.rfind("CONFIG_FILE", 0) == 0){
-			fileini = line.substr(11);
+			fileini = line.substr(12);
 		} else if (line.rfind("MET", 0) == 0){
 			MET = std::stod(line.substr(3));
 		} else if (line.rfind("GNC_RUN", 0) == 0){
@@ -3056,14 +3084,14 @@ void Multistage2026::clbkLoadStateEx(FILEHANDLE scn, void* vs){
 				AJdisabled = true;
 			}
 		} else if (line.rfind("GUIDANCE_FILE", 0) == 0){
-			guidancefile = std::stoi(line.substr(13));
+			guidancefile = line.substr(14);
 			parseGuidanceFile(guidancefile);
 
 			if(Gnc_running != 1){
 				VinkaCheckInitialMet();
 			}
 		} else if (line.rfind("TELEMETRY_FILE", 0) == 0){
-			tlmfile = line.substr(14);
+			tlmfile = line.substr(15);
 			parseTelemetryFile(tlmfile);
 			wReftlm = true;
 		} else if (line.rfind("CURRENT_BOOSTER", 0) == 0){
@@ -3086,7 +3114,7 @@ void Multistage2026::clbkLoadStateEx(FILEHANDLE scn, void* vs){
 		} else if (line.rfind("CURRENT_PAYLOAD", 0) == 0){
 			currentPayload = std::stoi(line.substr(15));
 			currentPayload -= 1;
-		} else if (line.rfind("FAIRING", 0)){
+		} else if (line.rfind("FAIRING", 0) == 0){
 			wFairing = std::stoi(line.substr(7));
 			if ((wFairing < 0) || (wFairing > 1)){
 				wFairing = 0;
@@ -3098,9 +3126,9 @@ void Multistage2026::clbkLoadStateEx(FILEHANDLE scn, void* vs){
 			}
 		} else if (line.rfind("COMPLEX", 0) == 0){
 			Complex = true;
-		} else if (line.rfind("HANGAR", 0)){
+		} else if (line.rfind("HANGAR", 0) == 0){
 			HangarMode = true;
-		} else if (line.rfind("CRAWLER", 0)){
+		} else if (line.rfind("CRAWLER", 0) == 0){
 			wCrawler = true;
 		} else if (line.rfind("CAMERA", 0) == 0){
 			
@@ -3135,9 +3163,10 @@ void Multistage2026::clbkLoadStateEx(FILEHANDLE scn, void* vs){
 		}
 	}
 
-	std::string tempFile = std::format("{}\\{}", OrbiterRoot, fileini);
-	oapiWriteLogV("%s: Config File: %s", GetName(), tempFile.c_str());
-	parseinifile(tempFile);
+	std::filesystem::path fullPath = std::filesystem::path(OrbiterRoot) / fileini;
+
+	oapiWriteLogV("%s: Config File: %s", GetName(), fullPath.string().c_str());
+	parseinifile(fullPath.string());
 
 	if ((currentInterstage > currentStage) || (currentInterstage > nInterstages) || (currentInterstage >= stage.at(currentStage).IntIncremental)){
 		stage.at(currentStage).wInter = false;
@@ -3250,7 +3279,7 @@ int Multistage2026::clbkConsumeBufferedKey(DWORD key, bool down, char* kstate) {
 			oapiAnnotationSetSize(note, 0.75);
 			std::string TXT = std::format("{}: \nDEVELOPER MODE ON \n\n[SPACEBAR] to reload .ini file \n\n[CTRL]+[SPACEBAR] to close Developer Mode", GetName());
 			oapiAnnotationSetText(note, const_cast<char *>(TXT.c_str()));
-			CreateDMD();
+			//CreateDMD();
 		} else {
 			killDMD = true;
 			DeveloperMode = false;
@@ -3541,6 +3570,155 @@ void Multistage2026::clbkPreStep(double simt, double simdt, double mjd){
 	return;
 }
 
+void Multistage2026::clbkPostCreation() {
+
+	oapiWriteLog(const_cast<char*>("Post Creation Started"));
+
+	UpdateLivePayloads();
+
+	if (failureProbability > 0) {
+		wFailures = true; 
+		FailuresEvaluation();
+	}
+
+	double planetmass = oapiGetMass(GetGravityRef());
+	mu = GGRAV * planetmass;
+	rt = oapiGetSize(GetGravityRef());
+	g0 = mu / (rt * rt);
+
+	if (!stepsloaded) {
+		CalculateAltSteps(planetmass);
+	}
+
+	//////COMPUTATIONAL GRAVITY TURN EVALUATION
+	if (Configuration == 0){
+
+		double init_psi = 21;
+		while ((!CGTE(init_psi * RAD)) && (init_psi > 0)){
+			init_psi -= 1;
+		}
+		double safety = init_psi * 0.05;//.2;
+		init_psi -= safety;
+		if (init_psi < 1) { init_psi = 1; }
+
+		GT_IP_Calculated = (90 - init_psi) * RAD;
+		logbuff = std::format("{}: Gravity Turn Initial Pitch by user: {:.3f} Calculated:{:.3f}", GetName(), GT_InitPitch * DEG, GT_IP_Calculated * DEG);
+		oapiWriteLog(const_cast<char *>(logbuff.c_str()));
+
+		if (GT_InitPitch == 0) { GT_InitPitch = GT_IP_Calculated; }
+
+		//Ramp or Hangar
+		if (!HangarMode) {
+			Ramp(wRamp);
+		} else {
+			CreateHangar();
+		}
+
+		if (wCamera){
+			CreateCamera();
+		}
+
+	}
+
+	InitPEG();
+
+	if (Complex){
+		EvaluateComplexFlight();
+	}
+
+	const ATMCONST* atmconst = oapiGetPlanetAtmConstants(GetSurfaceRef());
+	RefPressure = atmconst->p0;
+	double altlimit = atmconst->altlimit;
+	logbuff = std::format("{}: Planet Reference Pressure = {:.1f} Pa  Atmosphere Altitude Limit:{:.1f} km", GetName(), RefPressure, altlimit / 1000);
+	oapiWriteLog(const_cast<char *>(logbuff.c_str()));
+
+	GetStatusEx(&vs2);
+	vs2.status = 0;
+	GetRelativePos(GetSurfaceRef(), vs2.rpos);
+
+	oapiWriteLog(const_cast<char*>("Post Creation Terminated"));
+}
+
+bool Multistage2026::clbkDrawHUD(int mode, const HUDPAINTSPEC* hps, oapi::Sketchpad* skp) {
+	VESSEL4::clbkDrawHUD(mode, hps, skp);
+	int cx = hps->CX, cy = hps->CY;
+
+	DWORD w;
+	DWORD h;
+	DWORD bpp;
+	oapiGetViewportSize(&w, &h, &bpp);
+
+
+	char NAMEbuff[512];
+	memset(NAMEbuff, 0, sizeof(NAMEbuff));
+	int NAMElen;
+	NAMElen = sprintf_s(NAMEbuff, "%s", GetName());
+	skp->Text(0.02 * w, 0.25 * h + 20, NAMEbuff, NAMElen);
+
+
+	char METbuff[512];
+	memset(METbuff, 0, sizeof(METbuff));
+	int METlen;
+
+	if (MET >= 0) {
+		METlen = sprintf_s(METbuff, "MET: %03.0f:%02.0f:%02.0f", hms(MET));
+	}
+	else {
+		METlen = sprintf_s(METbuff, "T-: %03.0f:%02.0f:%02.0f", hms(MET));
+	}
+	skp->Text(0.02 * w, 0.25 * h + 40, METbuff, METlen);
+
+	char STAGEbuff[512];
+	memset(STAGEbuff, 0, sizeof(STAGEbuff));
+	int STAGElen;
+
+	STAGElen = sprintf_s(STAGEbuff, "Stage: %i", currentStage + 1);
+	skp->Text(0.02 * w, 0.25 * h + 60, STAGEbuff, STAGElen);
+
+	char BTbuff[512];
+	memset(BTbuff, 0, sizeof(BTbuff));
+	int BTlen;
+
+	BTlen = sprintf_s(BTbuff, "Remaining Stage Burn Time: %02.0f:%02.0f", hms(RemBurnTime(currentStage)).y, hms(RemBurnTime(currentStage)).z);
+	skp->Text(0.02 * w, 0.25 * h + 80, BTbuff, BTlen);
+
+	if ((runningPeg) && (currentStage == NN - 1)) {
+
+		if (GetAltitude() > altsteps[3])
+		{
+			char PMECObuff[512];
+			memset(PMECObuff, 0, sizeof(PMECObuff));
+			int PMECOlen;
+			VECTOR3 PMECO = hms(TMeco);
+			PMECOlen = sprintf_s(PMECObuff, "Predicted MECO: %02.0f:%02.0f", PMECO.y, PMECO.z);
+			skp->Text(0.02 * w, 0.25 * h + 100, PMECObuff, PMECOlen);
+		}
+	}
+
+
+	char PLNamebuff[512];
+	memset(PLNamebuff, 0, sizeof(PLNamebuff));
+	int PLNamelen;
+	char PLWbuff[512];
+	memset(PLWbuff, 0, sizeof(PLWbuff));
+	int PLWlen;
+
+	double PLtotWeight = 0;
+	for (int i = currentPayload; i < nPayloads; i++)
+	{
+		PLtotWeight += payload[i].mass;
+	}
+	PLNamelen = sprintf_s(PLNamebuff, "Next Payload: %s", payload[currentPayload].name.c_str());
+	skp->Text(w - 400, 0.25 * h + 20, PLNamebuff, PLNamelen);
+	PLWlen = sprintf_s(PLWbuff, "Total Payload Weight: %.1f kg", PLtotWeight);
+	skp->Text(w - 400, 0.25 * h + 40, PLWbuff, PLWlen);
+
+
+
+
+	return true;
+}
+
 void Multistage2026::clbkPostStep(double simt, double simdt, double mjd){
 
 	if ((GetThrusterGroupLevel(THGROUP_MAIN) > 0.95) && (Configuration == 0)) {
@@ -3748,7 +3926,7 @@ int Multistage2026::GetMSVersion(){
 	return MSVERSION;
 }
 
-void Multistage2026::CreateDMD(){
+/*void Multistage2026::CreateDMD() {
 	if (!DMD) {
 		DMD = new DevModeDlg(this);
 		DMD->Open(g_Param.hDLL);
@@ -3762,6 +3940,7 @@ void Multistage2026::DestroyDMD(){
 		hDlg = 0;
 	}
 }
+*/
 
 DLLCLBK void InitModule(HINSTANCE hModule){
 	g_Param.hDLL = hModule;

@@ -5,6 +5,7 @@
 #define __MULTISTAGE2026_HPP_
 
 #include "../../include/Orbitersdk.h"
+#include "resource.h"
 
 constexpr int MSVERSION{2026};
 
@@ -546,8 +547,8 @@ struct PAYLOAD {
 		speed = _V(0, 0, 0);
 		rot_speed = _V(0, 0, 0);
 		volume = 0.0;
-		render = 0.0;
-		nMeshes = 0.0;
+		render = 0;
+		nMeshes = 0;
 		Rotation = _V(0, 0, 0);
 		rotated = false;
 		live = false;
@@ -585,7 +586,7 @@ struct FAIRING {
 	}
 };
 
-enum GNC_Comand { CM_ROLL, CM_PITCH, CM_ENGINE, CM_FAIRING, CM_LES, CM_DISABLE_PITCH, CM_DISABLE_ROLL, CM_DISABLE_JETTISON, CM_PLAY, CM_JETTISON, CM_TARGET, CM_AOA, CM_ATTITUDE, CM_SPIN, CM_INVERSE, CM_ORBIT, CM_ENGINEOUT, CM_DEFAP, CM_GLIMIT, CM_DESTROY, CM_EXPLODE, CM_NOLINE };
+enum GNC_Comand { CM_ROLL, CM_PITCH, CM_ENGINE, CM_FAIRING, CM_LES, CM_DISABLE_PITCH, CM_DISABLE_ROLL, CM_DISABLE_JETTISON, CM_JETTISON, CM_TARGET, CM_AOA, CM_ATTITUDE, CM_SPIN, CM_INVERSE, CM_ORBIT, CM_ENGINEOUT, CM_DEFAP, CM_GLIMIT, CM_DESTROY, CM_EXPLODE, CM_NOLINE };
 
 struct GNC_STEP {
 	double time;
@@ -685,15 +686,15 @@ struct Fuel_Levels {
 class Multistage2026 : public VESSEL4{
 
     friend class DevModeDlg;
-    DevModeDlg *DMD;
+    //DevModeDlg *DMD;
 
     public:
 
         Multistage2026(OBJHANDLE hObj, int fmodel);
         ~Multistage2026();
 
-        void CreateDMD();
-        void DestroyDMD();
+        //void CreateDMD();
+        //void DestroyDMD();
         void clbkSetClassCaps(FILEHANDLE cfg) override;
         int clbkConsumeBufferedKey(DWORD key, bool down, char* kstate) override;
         int clbkConsumeDirectKey(char* kstate) override;
@@ -733,9 +734,8 @@ class Multistage2026 : public VESSEL4{
         void parseFXMach(const std::string filename);
         void parseFXVent(const std::string filename);
         void parseFXLaunch(const std::string filename);
-        void parseSound(const std::string filename);
         VECTOR3 GetBoosterPos(int nBooster, int N);
-        void ArrangePayloadMeshes(std::string data, int pnl);
+        void ArrangePayloadMeshes(const std::string &data, int pnl);
         std::string GetProperPayloadMeshName(int pnl, int n);
         void ArrangePayloadOffsets(const std::string &data, int pnl);
         void Jettison(int type, int current);
