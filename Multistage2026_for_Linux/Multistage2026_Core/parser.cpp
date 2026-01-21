@@ -598,24 +598,33 @@ void Multistage2026::parseFairing(const std::string &filename) {
 void Multistage2026::ArrangePayloadMeshes(const std::string &data, int pnl) {
     if (pnl < 0 || pnl >= 10) return;
 
-    std::stringstream ss(data);
-    std::string token;
-    int idx = 0;
-
     auto& p = payload->at(pnl);
 
-    std::string* meshNames[5] = { &p.meshname0, &p.meshname1, &p.meshname2, &p.meshname3, &p.meshname4 };
+    p.meshname0.clear();
+    p.meshname1.clear();
+    p.meshname2.clear();
+    p.meshname3.clear();
+    p.meshname4.clear();
 
-    for(int i = 0; i < 5; i++) *(meshNames[i]) = "";
+    static std::string token;
+    std::stringstream ss(data);
+    int idx = 0;
 
     while (std::getline(ss, token, ';') && idx < 5) {
-        token.erase(0, token.find_first_not_of(" \t\r\n"));
-        token.erase(token.find_last_not_of(" \t\r\n") + 1);
+        size_t first = token.find_first_not_of(" \t\r\n");
+        if (first != std::string::npos) {
+            size_t last = token.find_last_not_of(" \t\r\n");
+            std::string clean = token.substr(first, (last - first + 1));
 
-        if (!token.empty()) {
-            *(meshNames[idx]) = token;
+            if (idx == 0) p.meshname0 = clean;
+            else if (idx == 1) p.meshname1 = clean;
+            else if (idx == 2) p.meshname2 = clean;
+            else if (idx == 3) p.meshname3 = clean;
+            else if (idx == 4) p.meshname4 = clean;
+            
             idx++;
         }
+        token.clear();
     }
 
     p.nMeshes = idx;
@@ -1071,80 +1080,102 @@ void Multistage2026::parseTelemetryFile(const std::string &filename){
 }
 
 void Multistage2026::parseGuidanceFile(const std::string &filename) {
-    std::filesystem::path filebuff = OrbiterRoot + guidancefile;
-    std::ifstream gnc_file(filebuff);
-    if (!gnc_file.is_open()) return;
+
+    static std::string safePath; 
+    
+    safePath = OrbiterRoot;
+    if (!safePath.empty() && safePath.back() != '/' && safePath.back() != '\\') {
+        safePath += "/";
+    }
+    safePath += guidancefile;
+
+    std::replace(safePath.begin(), safePath.end(), '\\', '/');
+
+    oapiWriteLogV("DEBUG: Cargando Guiado desde: %s", safePath.c_str());
+
+    std::ifstream gnc_file(safePath);
+    if (!gnc_file.is_open()) {
+        oapiWriteLogV("ERROR: No se pudo abrir el archivo de guiado: %s", safePath.c_str());
+        return;
+	}
 
     nsteps = 0;
-    std::string line;
+    
+    static std::string line;
+    static std::string cmdName;
+    static std::string params;
+    static std::string item;
+    static std::string strTime;
 
-    while (getline(gnc_file, line)) {
-
-		if (nsteps >= Gnc_step.size()) {
-			oapiWriteLogV("WARNING: Guidance file too long! Stopping at step %d", nsteps);
-		break;
-		}
-
+    while (std::getline(gnc_file, line)) {
         line.erase(std::remove(line.begin(), line.end(), '\r'), line.end());
         line.erase(std::remove(line.begin(), line.end(), '\n'), line.end());
         if (line.empty() || line[0] == ';') continue;
 
+        if (nsteps >= Gnc_step.size()) {
+            oapiWriteLogV("WARNING: Guidance file too long! Stopping at step %d", nsteps);
+            break;
+        }
 
         size_t equalPos = line.find('=');
         if (equalPos == std::string::npos) continue;
 
-        std::string strTime = line.substr(0, equalPos);
-        Gnc_step.at(nsteps).time = std::stod(strTime);
+        auto& currentStep = Gnc_step.at(nsteps);
 
+        strTime = line.substr(0, equalPos);
+        try {
+            currentStep.time = std::stod(strTime);
+        } catch (...) { currentStep.time = 0; }
 
         size_t openParen = line.find('(', equalPos);
         size_t closeParen = line.find(')', openParen);
         
         if (openParen != std::string::npos && closeParen != std::string::npos) {
-            std::string cmdName = line.substr(equalPos + 1, openParen - equalPos - 1);
-
+            cmdName = line.substr(equalPos + 1, openParen - equalPos - 1);
             cmdName.erase(std::remove_if(cmdName.begin(), cmdName.end(), ::isspace), cmdName.end());
-            Gnc_step.at(nsteps).Comand = cmdName;
+            currentStep.Comand = cmdName;
 
-            std::string params = line.substr(openParen + 1, closeParen - openParen - 1);
+            params = line.substr(openParen + 1, closeParen - openParen - 1);
             std::stringstream ss(params);
-            std::string item;
-            int pIdx = 0;
             
-
-            Gnc_step.at(nsteps).trval1 = Gnc_step.at(nsteps).trval2 = 0; 
-            for(int v=0; v<6; v++) Gnc_step.at(nsteps).wValue[v] = false;
+            int pIdx = 0;
+            currentStep.trval1 = currentStep.trval2 = 0; 
+            for(int v=0; v<6; v++) currentStep.wValue[v] = false;
 
             while (std::getline(ss, item, ',')) {
                 if (pIdx < 6) {
                     try {
                         double val = std::stod(item);
-                        if (pIdx == 0) Gnc_step.at(nsteps).trval1 = val;
-                        else if (pIdx == 1) Gnc_step.at(nsteps).trval2 = val;
-                        else if (pIdx == 2) Gnc_step.at(nsteps).trval3 = val;
-                        else if (pIdx == 3) Gnc_step.at(nsteps).trval4 = val;
-                        else if (pIdx == 4) Gnc_step.at(nsteps).trval5 = val;
-                        else if (pIdx == 5) Gnc_step.at(nsteps).trval6 = val;
-                        Gnc_step.at(nsteps).wValue[pIdx] = true;
-                    } catch (...) {  }
+                        if (pIdx == 0) currentStep.trval1 = val;
+                        else if (pIdx == 1) currentStep.trval2 = val;
+                        else if (pIdx == 2) currentStep.trval3 = val;
+                        else if (pIdx == 3) currentStep.trval4 = val;
+                        else if (pIdx == 4) currentStep.trval5 = val;
+                        else if (pIdx == 5) currentStep.trval6 = val;
+                        currentStep.wValue[pIdx] = true;
+                    } catch (...) { }
                     pIdx++;
                 }
             }
         }
         
-        
-        std::string lowLine = line;
-        std::transform(lowLine.begin(), lowLine.end(), lowLine.begin(), ::tolower);
-        if (lowLine.find("disable") != std::string::npos) {
-            if (lowLine.find("pitch") != std::string::npos) Gnc_step.at(nsteps).Comand = "disablepitch";
-            else if (lowLine.find("roll") != std::string::npos) Gnc_step.at(nsteps).Comand = "disableroll";
-            else if (lowLine.find("jettison") != std::string::npos) Gnc_step.at(nsteps).Comand = "disablejettison";
+        if (line.find("disable") != std::string::npos || line.find("DISABLE") != std::string::npos) {
+            std::string lowLine = line;
+            std::transform(lowLine.begin(), lowLine.end(), lowLine.begin(), ::tolower);
+            if (lowLine.find("pitch") != std::string::npos) currentStep.Comand = "disablepitch";
+            else if (lowLine.find("roll") != std::string::npos) currentStep.Comand = "disableroll";
+            else if (lowLine.find("jettison") != std::string::npos) currentStep.Comand = "disablejettison";
         }
 
         nsteps++;
+        
+        line.clear();
+        cmdName.clear();
+        params.clear();
+        item.clear();
     }
     
     VinkaComposeGNCSteps();
-	VinkaRearrangeSteps();
-	nsteps = VinkaCountSteps();
+    VinkaRearrangeSteps();
+    nsteps = VinkaCountSteps();
 }
