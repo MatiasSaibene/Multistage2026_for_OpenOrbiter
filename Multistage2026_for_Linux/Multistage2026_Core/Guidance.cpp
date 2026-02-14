@@ -1,3 +1,34 @@
+  /*********************************************************************************************
+  This file is part of Multistage2015 project
+  Copyright belogs to Fred18 for module implementation and its code
+  Biggest Credit goes to Vinka for his idea of Multistage.dll. None of his code was used here since his addons are all closed source.
+  Credit goes to Face for having pointed me to the GetPrivateProfileString 
+  Credit goes to Hlynkacg for his OrientForBurn function which was the basis on which I developed the Attitude Function.
+
+  Multistage2015 is distributed FREEWARE. Its code is distributed along with the dll. Nobody is authorized to exploit the module or the code or parts of them commercially directly or indirectly.
+You CAN distribute the dll together with your addon but in this case you MUST:
+-	Include credit to the author in your addon documentation;
+-	Add to the addon documentation the official link of Orbit Hangar Mods for download and suggest to download the latest and updated version of the module.
+You CAN use parts of the code of Multistage2015, but in this case you MUST:
+-	Give credits in your copyright header and in your documentation for the part you used.
+-	Let your project be open source and its code available for at least visualization by other users.
+You CAN NOT use the entire code for making and distributing the very same module claiming it as your work entirely or partly.
+You CAN NOT claim that Multistage2015 is an invention of yourself or a work made up by yourself, or anyhow let intend that is not made and coded by the author.
+You install and use Multistage2015 at your own risk, author will not be responsible for any claim or damage subsequent to its use or for the use of part of it or of part of its code.
+*********************************************************************************************/
+
+
+// ==============================================================
+//						MultiStage2015
+//                  
+//					       By Fred18
+//                  
+//
+// Guidance.cpp
+// ==============================================================
+
+
+//############################################################################//
 #include "../../include/Orbitersdk.h"
 #include "Multistage2026.hpp"
 #include <algorithm>
@@ -10,12 +41,12 @@ double Multistage2026::finalv(double Abside, double Apo,double Peri){
 	return sqrt(mu*(2/(Abside+rt)-1/(0.5*(Apo+Peri+2*rt))));
 }
 
-double Multistage2026::CalcAzimuth()
-{double heading;
+double Multistage2026::CalcAzimuth(){
+	double heading;
 
-double lon,lat,rad;
-GetEquPos(lon,lat,rad);
-const double wearth=2*PI/oapiGetPlanetPeriod(GetSurfaceRef()); 
+	double lon,lat,rad;
+	GetEquPos(lon,lat,rad);
+	const double wearth=2*PI/oapiGetPlanetPeriod(GetSurfaceRef()); 
 	double EastVel=abs((oapiGetSize(GetSurfaceRef())+GetAltitude())*wearth*cos(lat));
 	VECTOR3 hspd;
 //	GetHorizonAirspeedVector(hspd);
@@ -38,32 +69,33 @@ const double wearth=2*PI/oapiGetPlanetPeriod(GetSurfaceRef());
 
 	return heading;
 }
+
 double Multistage2026::GetProperHeading(){
 
 	double heading;
-	if(!runningPeg)
-	{
+	if(!runningPeg){
 		if(GetAltitude()<3000){ //JUST A SAFETY IN CASE ROLL HAS SOMETHING BAD
 		heading=VinkaAzimuth;
-		}else{
+		} else {
 		oapiGetHeading(GetHandle(),&heading);
 		}
-	}else{
-	
-	double lon,lat,rad;
-	GetEquPos(lon,lat,rad);
 
-	if(abs(tgtinc)<abs(lat)){
-		if(lat<0){	tgtinc=abs(lat);	}else{	tgtinc=-abs(lat);	}
-							}
+	} else {
 	
-		heading=CalcAzimuth();
+		double lon,lat,rad;
+		GetEquPos(lon,lat,rad);
+
+		if(abs(tgtinc)<abs(lat)){
+			if(lat<0){	tgtinc=abs(lat);	}else{	tgtinc=-abs(lat);	}
+								}
+		
+			heading=CalcAzimuth();
 	}
+
 	return heading;
 }
 
 double Multistage2026::GetVPerp(){
-
 	
 	OBJHANDLE hearth=GetSurfaceRef();
 	VECTOR3 relvel,loc_rvel,horvel,glob_vpos;
@@ -78,136 +110,135 @@ double Multistage2026::GetVPerp(){
 	return horvel.y;
 }
 
-
-
 double Multistage2026::GetProperRoll(double RequestedRoll=0){
-	if(RequestedRoll<0){RequestedRoll+=2*PI;}
+	if(RequestedRoll<0){
+		RequestedRoll+=2*PI;
+	}
 	double GB=GetBank();
-	if(GB<0){GB+=2*PI;}
+	if(GB<0){
+		GB+=2*PI;
+	}
 	double roll;
 	roll=GB-RequestedRoll;
-	if(roll>PI){roll-=2*PI;}
+	if(roll>PI){
+		roll-=2*PI;
+	}
 	return roll;
 }
 
 //Attitude Function! Got the inspiration from the OrientForBurn of Hlynkacg
 
 void Multistage2026::Attitude(double pitch,double roll, double heading,double pitchrate=2, double rollrate=8, double yawrate=5){
+
 	if(AttCtrl){
-	double pdb;								//Deadband for rates, way higher if Time Acceleration is applied
-//	if(oapiGetTimeAcceleration()>1){
-	//	pdb=0.1;
-	//}else{
+		double pdb;								//Deadband for rates, way higher if Time Acceleration is applied
+	//	if(oapiGetTimeAcceleration()>1){
+		//	pdb=0.1;
+		//}else{
 		pdb=0.1;
-	//}
+		//}
 
 
-VECTOR3 PMI;
-	GetPMI(PMI);
-	double ReqTime=oapiGetSimStep()*oapiGetTimeAcceleration();
-	VECTOR3 ReqAngularAcc=_V(0,0,0);
-	VECTOR3 ReqTorque=_V(0,0,0);
-	
-	VECTOR3 thetain=_V(cos(pitch)*sin(heading),sin(pitch),cos(pitch)*cos(heading));  // Getting the proper input vector from pitch and heading
-	
-	VECTOR3 tgtVector;
-	HorizonInvRot(thetain,tgtVector);
+		VECTOR3 PMI;
+		GetPMI(PMI);
+		double ReqTime=oapiGetSimStep()*oapiGetTimeAcceleration();
+		VECTOR3 ReqAngularAcc=_V(0,0,0);
+		VECTOR3 ReqTorque=_V(0,0,0);
+		
+		VECTOR3 thetain=_V(cos(pitch)*sin(heading),sin(pitch),cos(pitch)*cos(heading));  // Getting the proper input vector from pitch and heading
+		
+		VECTOR3 tgtVector;
+		HorizonInvRot(thetain,tgtVector);
 
 
-	normalise (tgtVector);
-	VECTOR3 ThrustVector = {0,0,1}; 
-	VECTOR3 input = crossp(tgtVector,ThrustVector);
-	
-	input.z=GetProperRoll(roll);
+		normalise (tgtVector);
+		VECTOR3 ThrustVector = {0,0,1}; 
+		VECTOR3 input = crossp(tgtVector,ThrustVector);
+		
+		input.z=GetProperRoll(roll);
 
-	
-	if(abs(input.z)>1){
-		//input.z=input.z/abs(input.z);
-		input.z=SignOf(input.z);
+		
+		if(abs(input.z)>1){
+			//input.z=input.z/abs(input.z);
+			input.z=SignOf(input.z);
+		}
+		VECTOR3 aVel; 
+		GetAngularVel(aVel);
+		//aVel=operator/(aVel,oapiGetTimeAcceleration());
+
+		double PitchV = aVel.x*DEG;	
+		double RollV = aVel.z*DEG;	
+		double YawV = aVel.y*DEG;	
+		
+		// PITCH
+		double CurrentRate = PitchV;
+		double CommandedRate = asin(input.x)*DEG;
+		CommandedRate=((std::min(abs(CommandedRate),pitchrate))*SignOf(CommandedRate));
+		double pDelta = (CommandedRate - CurrentRate); 
+		
+
+		VECTOR3 tgtrotlevel;
+		GetAttitudeRotLevel(tgtrotlevel);
+
+
+		if(PitchCtrl){
+		if(abs(pDelta)>pdb){
+						
+				ReqAngularAcc.x=pDelta*RAD/ReqTime;
+				ReqTorque.x=PMI.x*GetMass()*ReqAngularAcc.x;
+				tgtrotlevel.x=std::min(abs(ReqTorque.x/MaxTorque.x),1.0)*SignOf(ReqTorque.x);
+		
+			}else{tgtrotlevel.x=0;}
+			SetAttitudeRotLevel(0,tgtrotlevel.x);
+		}
+		
+		// ROLL
+		CurrentRate = RollV;
+		CommandedRate = asin(input.z)*DEG;
+		CommandedRate=((std::min(abs(CommandedRate),rollrate))*SignOf(CommandedRate));
+		double rDelta = (CommandedRate - CurrentRate); 
+		
+		if(RollCtrl){
+		
+
+	if(abs(rDelta)>pdb){
+				ReqAngularAcc.z=rDelta*RAD/ReqTime;
+				ReqTorque.z=PMI.z*GetMass()*ReqAngularAcc.z;
+				tgtrotlevel.z=std::min(abs(ReqTorque.z/MaxTorque.z),1.0)*SignOf(ReqTorque.z);
+			}else{tgtrotlevel.z=0;}
+			SetAttitudeRotLevel(2,tgtrotlevel.z);
+		}
+		
+		// YAW
+		CurrentRate = YawV; 
+		CommandedRate = asin(input.y)*DEG;
+		CommandedRate=((std::min(abs(CommandedRate),yawrate))*SignOf(CommandedRate));
+		double yDelta = (CommandedRate - CurrentRate); 
+		
+		if(YawCtrl){
+		
+			if(abs(yDelta)>pdb){
+			ReqAngularAcc.y=yDelta*RAD/ReqTime;
+			ReqTorque.y=PMI.y*GetMass()*ReqAngularAcc.y;
+			tgtrotlevel.y=std::min(abs(ReqTorque.y/MaxTorque.y),1.0)*SignOf(ReqTorque.y);
+			} else {
+				tgtrotlevel.y=0;
+			}
+			SetAttitudeRotLevel(1,tgtrotlevel.y);
+		}
 	}
-	VECTOR3 aVel; 
-	GetAngularVel(aVel);
-	//aVel=operator/(aVel,oapiGetTimeAcceleration());
-
-	double PitchV = aVel.x*DEG;	
-	double RollV = aVel.z*DEG;	
-	double YawV = aVel.y*DEG;	
-	
-	// PITCH
-	double CurrentRate = PitchV;
-	double CommandedRate = asin(input.x)*DEG;
-	CommandedRate=((std::min(abs(CommandedRate),pitchrate))*SignOf(CommandedRate));
-	double pDelta = (CommandedRate - CurrentRate); 
-	
-
-	VECTOR3 tgtrotlevel;
-	GetAttitudeRotLevel(tgtrotlevel);
-
-
-	if(PitchCtrl){
-	if(abs(pDelta)>pdb){
-					
-			ReqAngularAcc.x=pDelta*RAD/ReqTime;
-			ReqTorque.x=PMI.x*GetMass()*ReqAngularAcc.x;
-			tgtrotlevel.x=std::min(abs(ReqTorque.x/MaxTorque.x),1.0)*SignOf(ReqTorque.x);
-	
-		}else{tgtrotlevel.x=0;}
-		SetAttitudeRotLevel(0,tgtrotlevel.x);
-	}
-	
-	// ROLL
-	CurrentRate = RollV;
-	CommandedRate = asin(input.z)*DEG;
-	CommandedRate=((std::min(abs(CommandedRate),rollrate))*SignOf(CommandedRate));
-	double rDelta = (CommandedRate - CurrentRate); 
-	
-	if(RollCtrl){
-	
-
-if(abs(rDelta)>pdb){
-			ReqAngularAcc.z=rDelta*RAD/ReqTime;
-			ReqTorque.z=PMI.z*GetMass()*ReqAngularAcc.z;
-			tgtrotlevel.z=std::min(abs(ReqTorque.z/MaxTorque.z),1.0)*SignOf(ReqTorque.z);
-		}else{tgtrotlevel.z=0;}
-		SetAttitudeRotLevel(2,tgtrotlevel.z);
-	}
-	
-	// YAW
-	CurrentRate = YawV; 
-	CommandedRate = asin(input.y)*DEG;
-	CommandedRate=((std::min(abs(CommandedRate),yawrate))*SignOf(CommandedRate));
-	double yDelta = (CommandedRate - CurrentRate); 
-	
-	if(YawCtrl){
-	
-		if(abs(yDelta)>pdb){
-		ReqAngularAcc.y=yDelta*RAD/ReqTime;
-		ReqTorque.y=PMI.y*GetMass()*ReqAngularAcc.y;
-		tgtrotlevel.y=std::min(abs(ReqTorque.y/MaxTorque.y),1.0)*SignOf(ReqTorque.y);
-		}else{tgtrotlevel.y=0;}
-		SetAttitudeRotLevel(1,tgtrotlevel.y);
-	}
-
-
-
-	}
-	
-
-	return;
 }
 
-void Multistage2026::ToggleAP()
-{
+void Multistage2026::ToggleAP(){
 	if(APstat){
-	APstat=false;
-	}else{
-	APstat=true;
+		APstat = false;
+	} else {
+		APstat = true;
 	}
 	return;
 }
 
-void Multistage2026::ToggleAttCtrl(bool Pitch, bool Yaw, bool Roll)
-{
+void Multistage2026::ToggleAttCtrl(bool Pitch, bool Yaw, bool Roll){
 	if((Pitch)&&(Yaw)&&(Roll)){
 	if(AttCtrl)
 	{
@@ -240,8 +271,6 @@ void Multistage2026::ToggleAttCtrl(bool Pitch, bool Yaw, bool Roll)
 			RollCtrl=true;
 		}
 	}
-
-
 }
 
 void Multistage2026::killAP(){
@@ -258,11 +287,13 @@ void Multistage2026::killAP(){
 
 void Multistage2026::VinkaUpdateRollTime(){
 
-	Gnc_step[VinkaFindRoll()].time_fin=Gnc_step[VinkaFindFirstPitch()].time-1;
+	Gnc_step.at(VinkaFindRoll()).time_fin=Gnc_step.at(VinkaFindFirstPitch()).time-1;
 
 	return;
 }
+
 void Multistage2026::VinkaComposeGNCSteps(){
+	
 	for(int i=0;i<=nsteps;i++){
 		Gnc_step.at(i).executed=false;
 		
@@ -381,7 +412,7 @@ void Multistage2026::VinkaComposeGNCSteps(){
 			if(Gnc_step.at(i).duration<=0){
 		
 				if(i<nsteps){
-					Gnc_step.at(i).time_fin=Gnc_step[i+1].time;
+					Gnc_step.at(i).time_fin=Gnc_step.at(i+1).time;
 				}else{
 					Gnc_step.at(i).time_fin=Gnc_step.at(i).time_init+60;
 				}
@@ -400,7 +431,7 @@ void Multistage2026::VinkaComposeGNCSteps(){
 			if(Gnc_step.at(i).duration<=0){
 				
 				if(i<nsteps){
-					Gnc_step.at(i).time_fin=Gnc_step[i+1].time;
+					Gnc_step.at(i).time_fin=Gnc_step.at(i+1).time;
 				}else{
 					Gnc_step.at(i).time_fin=Gnc_step.at(i).time_init+60;
 				}
@@ -412,7 +443,7 @@ void Multistage2026::VinkaComposeGNCSteps(){
 			Gnc_step.at(i).time_init=Gnc_step.at(i).time;
 
 			if(i<nsteps){
-					Gnc_step.at(i).time_fin=Gnc_step[i+1].time;
+					Gnc_step.at(i).time_fin=Gnc_step.at(i + 1).time;
 				}else{
 					Gnc_step.at(i).time_fin=Gnc_step.at(i).time_init+60;
 				}
@@ -469,17 +500,18 @@ void Multistage2026::VinkaComposeGNCSteps(){
 
 		}
 	}
+
 	if(!wPeg){
-	VinkaUpdateRollTime();
+		VinkaUpdateRollTime();
 	}
-	return;
 }
+
 double Multistage2026::VinkaFindEndTime(){
 	double EndTime=0;
 	
 	for(int q=0;q<=nsteps;q++){
-		if(Gnc_step[q].time_fin>EndTime){
-			EndTime=Gnc_step[q].time_fin;
+		if(Gnc_step.at(q).time_fin > EndTime){
+			EndTime = Gnc_step.at(q).time_fin;
 		}
 	}
 	
@@ -487,371 +519,380 @@ double Multistage2026::VinkaFindEndTime(){
 }
 
 int Multistage2026::VinkaGetStep(double met){
+	
 	int n=0;
-	for(int i=1;i<=nsteps;i++){
-		if((met>=Gnc_step.at(i).time)&&(Gnc_step.at(i).gnc_Comand!=GNC_Comand::CM_NOLINE)){
+
+	for(int i = 1; i <= nsteps; i++){
+		if((met >= Gnc_step.at(i).time) && (Gnc_step.at(i).gnc_Comand != GNC_Comand::CM_NOLINE)){
 			n+=1;
 		}
 	}
 	return n;
 }
+
 void Multistage2026::VinkaCheckInitialMet(){
-	if(Configuration){
-		MET=Gnc_step[1].time;
+	
+	if(Configuration==0){
+		MET=Gnc_step.at(1).time;
 	}
-	if(nsteps)
-	{
+
+	if(nsteps==0){
 		MET=-1;
 	}
-	return;
-
 }
+
 int Multistage2026::VinkaFindRoll(){
+	
 	int n=0;
+
 	for(int i=1;i<=nsteps;i++){
-	n+=1;
+		n+=1;
 		if(Gnc_step.at(i).gnc_Comand==GNC_Comand::CM_ROLL){
-			
 			break;
 		}
+	}
+	return n;
 }
-return n;
-}
+
 int Multistage2026::VinkaFindFirstPitch(){
-int n=0;
-for(int i=1;i<=nsteps;i++){
-	n+=1;
+	int n=0;
+	for(int i = 1; i <= nsteps; i++){
+		n+=1;
 		if(Gnc_step.at(i).gnc_Comand==GNC_Comand::CM_PITCH){
-			
 			break;
 		}
-}
-return n;
+	}
+
+	return n;
 
 }
+
 void Multistage2026::VinkaConsumeStep(int step){
 
-	if(Gnc_step[step].time_fin<=MET){Gnc_step[step].executed=true;}
+	if(Gnc_step.at(step).time_fin<=MET){
+		Gnc_step.at(step).executed=true;
+	}
 
-	if(Gnc_step[step].executed==false){
+	if(Gnc_step.at(step).executed==false){
 
-		switch(Gnc_step[step].gnc_Comand){
-		case GNC_Comand::CM_ENGINE:
-			VinkaEngine(step);
-		break;
+		switch(Gnc_step.at(step).gnc_Comand){
+			case GNC_Comand::CM_ENGINE:
+				VinkaEngine(step);
+				break;
 		case GNC_Comand::CM_ROLL:
-			VinkaRoll(step);
-		break;
+				VinkaRoll(step);
+				break;
 		case GNC_Comand::CM_PITCH:
-			VinkaPitch(step);
-		break;
+				VinkaPitch(step);
+				break;
 		case GNC_Comand::CM_FAIRING:
-			if((wFairing==1)&&(GetAltitude()>=Gnc_step[step].val_init)){
+			if((wFairing==1)&&(GetAltitude()>=Gnc_step.at(step).val_init)){
 			Jettison(TFAIRING,0);
-			Gnc_step[step].time_fin=MET;
-			Gnc_step[step].executed=true;
+			Gnc_step.at(step).time_fin=MET;
+			Gnc_step.at(step).executed=true;
 			}
 			
-		break;
+			break;
 		case GNC_Comand::CM_LES:
-			if((wLes==true)&&(GetAltitude()>=Gnc_step[step].val_init)){
+			if((wLes==true)&&(GetAltitude()>=Gnc_step.at(step).val_init)){
 			Jettison(TLES,0);
-			Gnc_step[step].time_fin=MET;
-			Gnc_step[step].executed=true;
+			Gnc_step.at(step).time_fin=MET;
+			Gnc_step.at(step).executed=true;
 			}
 			
-		break;
+			break;
 		case GNC_Comand::CM_DISABLE_JETTISON:
 			AJdisabled=true;
-			Gnc_step[step].executed=true;
-		break;
+			Gnc_step.at(step).executed=true;
+			break;
 		case GNC_Comand::CM_DISABLE_ROLL:
 			rolldisabled=true;
-			Gnc_step[step].executed=true;
-		break;
+			Gnc_step.at(step).executed=true;
+			break;
 		case GNC_Comand::CM_DISABLE_PITCH:
 			pitchdisabled=true;
-			Gnc_step[step].executed=true;
-		break;
+			Gnc_step.at(step).executed=true;
+			break;
 		case GNC_Comand::CM_JETTISON:
-		char kstate[256];
-		for(int i=0;i<256;i++) kstate[i]=0x00;
-		kstate[OAPI_KEY_J]=0x80;
-		SendBufferedKey(OAPI_KEY_J,true,kstate);
-		Gnc_step[step].executed=true;
-		break;
+			char kstate[256];
+			for(int i=0;i<256;i++) kstate[i]=0x00;
+			kstate[OAPI_KEY_J]=0x80;
+			SendBufferedKey(OAPI_KEY_J,true,kstate);
+			Gnc_step.at(step).executed=true;
+			break;
 		case GNC_Comand::CM_AOA:
-		double DesiredPitch;
-		DesiredPitch=GetPitch()-VinkaMode*GetAOA()+VinkaMode*Gnc_step[step].val_init;
-		TgtPitch=DesiredPitch;
-		Attitude(DesiredPitch,(0.5*(1-VinkaMode)*PI),GetProperHeading());
-		break;
+			double DesiredPitch;
+			DesiredPitch=GetPitch()-VinkaMode*GetAOA()+VinkaMode*Gnc_step.at(step).val_init;
+			TgtPitch=DesiredPitch;
+			Attitude(DesiredPitch,(0.5*(1-VinkaMode)*PI),GetProperHeading());
+			break;
 		case GNC_Comand::CM_ATTITUDE:
-		TgtPitch=Gnc_step[step].trval1*RAD;
-		Attitude(Gnc_step[step].trval1*RAD,-(Gnc_step[step].trval3*RAD),Gnc_step[step].trval2*RAD);
-		break;
+			TgtPitch=Gnc_step.at(step).trval1*RAD;
+			Attitude(Gnc_step.at(step).trval1*RAD,-(Gnc_step.at(step).trval3*RAD),Gnc_step.at(step).trval2*RAD);
+			break;
 		case GNC_Comand::CM_SPIN:
 			spinning=true;
 			VECTOR3 AngVel;
 			GetAngularVel(AngVel);
 		
-			if((fabs(fabs(AngVel.z)-fabs(Gnc_step[step].val_init*RAD))>0.1)||(AngVel.z/Gnc_step[step].val_init<0)){
+			if((fabs(fabs(AngVel.z)-fabs(Gnc_step.at(step).val_init*RAD))>0.1)||(AngVel.z/Gnc_step.at(step).val_init<0)){
 				TgtPitch=GetPitch();
-				Attitude(GetPitch(),GetBank()-Gnc_step[step].val_init,GetProperHeading(),0,fabs((GetBank()*DEG+Gnc_step[step].val_init)),0);
-			}else{
+				Attitude(GetPitch(),GetBank()-Gnc_step.at(step).val_init,GetProperHeading(),0,fabs((GetBank()*DEG+Gnc_step.at(step).val_init)),0);
+			} else {
 				spinning=false;
-				Gnc_step[step].executed=true;}
-		break;
-			case GNC_Comand::CM_TARGET:
+				Gnc_step.at(step).executed=true;
+			}
+
+			break;
+		case GNC_Comand::CM_TARGET:
 				double ApR,Rt,ApD;
 				GetApDist(ApR);
 				Rt=oapiGetSize(GetSurfaceRef());
 				ApD=ApR-Rt;
 				ApD=ApD/1000;
-				if(ApD>=Gnc_step[step].val_init){
-					Gnc_step[step].time_fin=MET;
-					Gnc_step[step].executed=true;
+				if(ApD>=Gnc_step.at(step).val_init){
+					Gnc_step.at(step).time_fin=MET;
+					Gnc_step.at(step).executed=true;
 				}
-		break;
-			case GNC_Comand::CM_INVERSE:
-		VinkaMode*=-1;
-		Gnc_step[step].executed=true;
-		break;
-			case GNC_Comand::CM_ENGINEOUT:
-		if((Gnc_step[step].val_init>0)&&(Gnc_step[step].val_init<=(double)stage->at(currentStage).nEngines))
-		{
-			SetThrusterLevel(stage->at(currentStage).th_main_h[(int)Gnc_step[step].val_init-1],0);
-		}else{
-			SetThrusterLevel(stage->at(currentStage).th_main_h[stage->at(currentStage).nEngines-1],0);
-		}
-		Gnc_step[step].executed=true;
-		break;
-			case GNC_Comand::CM_ORBIT:
-				if(Configuration==1)
-				{
-					runningPeg=true;
-		if(GetAltitude()<altsteps[0]){
-			TgtPitch=90*RAD-Misc.VerticalAngle;
-			Attitude(90*RAD-Misc.VerticalAngle,GetBank(),GetHeading(),8,0,5);
-			//SetAngularVel(_V(0,0,0));
-
-		}else if((GetAltitude()>=altsteps[0])&&(GetAltitude()<altsteps[1])){
-		//Attitude(90*RAD,0.5*PI,VinkaAzimuth*(0.5*(1-VinkaMode)),8,20,5);
-
-		TgtPitch=89.9*RAD-Misc.VerticalAngle;
-		Attitude(89.9*RAD-Misc.VerticalAngle,(0.5*(1-VinkaMode)*PI),GetProperHeading(),8,20,5);
-		}else if((GetAltitude()>=altsteps[1])&&(GetAltitude()<altsteps[2])){
-		TgtPitch=GT_InitPitch;
-
-		double deltaAltitude=altsteps[2]-GetAltitude();
-		double deltaTime=sqrt((2*deltaAltitude)/(1.5*getabsacc()-g0));
-
-		double PitchRate=abs((GetPitch()-GT_InitPitch)/deltaTime);
-		Attitude(GT_InitPitch,(0.5*(1-VinkaMode)*PI),GetProperHeading(),PitchRate*DEG,20,PitchRate*DEG);
-
-
-
-
-
-
-
-
-		}else if((GetAltitude()>=altsteps[2])&&(GetAltitude()<altsteps[3])){
-		DesiredPitch=GetPitch()-VinkaMode*GetAOA()+(-0.7*RAD);
-		TgtPitch=DesiredPitch;
-		Attitude(DesiredPitch,(0.5*(1-VinkaMode)*PI),GetProperHeading(),8,5,8);
-		}else{
-		if(GetThrusterGroupLevel(THGROUP_MAIN)>0.1)
-				{
-				PEG();
-				CutoffCheck();
-					if(CutoffCheck()==true)
-					{
-						Gnc_step[step].time_fin=MET+1;
-						Gnc_step[step].executed=true;
-					}
-				}		
+			break;
+		case GNC_Comand::CM_INVERSE:
+			VinkaMode*=-1;
+			Gnc_step.at(step).executed=true;
+			break;
+		case GNC_Comand::CM_ENGINEOUT:
+			if((Gnc_step.at(step).val_init>0)&&(Gnc_step.at(step).val_init<=(double)stage->at(currentStage).nEngines)){
+				SetThrusterLevel(stage->at(currentStage).th_main_h.at((int)Gnc_step.at(step).val_init-1),0);
+			} else {
+				SetThrusterLevel(stage->at(currentStage).th_main_h.at(stage->at(currentStage).nEngines-1),0);
 			}
-				}
+			Gnc_step.at(step).executed=true;
+			break;
+		case GNC_Comand::CM_ORBIT:
+			if(Configuration==1){
+				runningPeg=true;
+				if(GetAltitude()<altsteps.at(0)){
+					TgtPitch=90*RAD-Misc.VerticalAngle;
+					Attitude(90*RAD-Misc.VerticalAngle,GetBank(),GetHeading(),8,0,5);
+					//SetAngularVel(_V(0,0,0));
 
-		break;
-			case GNC_Comand::CM_DEFAP:
-				ActivateNavmode((int)Gnc_step[step].trval1);
-				Gnc_step[step].executed=true;
-				break;
-			case GNC_Comand::CM_GLIMIT:
-				if(getacc()>Gnc_step[step].trval1*g0)
-				{
-					double lev=GetThrusterGroupLevel(THGROUP_MAIN);
-					SetThrusterGroupLevel(THGROUP_MAIN,lev-0.001);
+				} else if((GetAltitude()>=altsteps.at(0))&&(GetAltitude()<altsteps.at(1))){
+					//Attitude(90*RAD,0.5*PI,VinkaAzimuth*(0.5*(1-VinkaMode)),8,20,5);
+
+					TgtPitch=89.9*RAD-Misc.VerticalAngle;
+					Attitude(89.9*RAD-Misc.VerticalAngle,(0.5*(1-VinkaMode)*PI),GetProperHeading(),8,20,5);
+				} else if((GetAltitude()>=altsteps.at(1))&&(GetAltitude()<altsteps.at(2))){
+					TgtPitch=GT_InitPitch;
+
+					double deltaAltitude=altsteps.at(2)-GetAltitude();
+					double deltaTime=sqrt((2*deltaAltitude)/(1.5*getabsacc()-g0));
+
+					double PitchRate=abs((GetPitch()-GT_InitPitch)/deltaTime);
+					Attitude(GT_InitPitch,(0.5*(1-VinkaMode)*PI),GetProperHeading(),PitchRate*DEG,20,PitchRate*DEG);
+				} else if((GetAltitude()>=altsteps.at(2))&&(GetAltitude()<altsteps.at(3))){
+					DesiredPitch=GetPitch()-VinkaMode*GetAOA()+(-0.7*RAD);
+					TgtPitch=DesiredPitch;
+					Attitude(DesiredPitch,(0.5*(1-VinkaMode)*PI),GetProperHeading(),8,5,8);
+				} else {
+					if(GetThrusterGroupLevel(THGROUP_MAIN)>0.1){
+						PEG();
+						CutoffCheck();
+						if(CutoffCheck()==true){
+							Gnc_step.at(step).time_fin=MET+1;
+							Gnc_step.at(step).executed=true;
+						}
+					}		
 				}
-				break;
-			case GNC_Comand::CM_DESTROY:
-				Gnc_step[step].executed=true;
+			}
+			break;
+
+		case GNC_Comand::CM_DEFAP:
+			ActivateNavmode((int)Gnc_step.at(step).trval1);
+			Gnc_step.at(step).executed=true;
+			break;
+		case GNC_Comand::CM_GLIMIT:
+			if(getacc()>Gnc_step.at(step).trval1*g0){
+				double lev=GetThrusterGroupLevel(THGROUP_MAIN);
+				SetThrusterGroupLevel(THGROUP_MAIN,lev-0.001);
+			}
+			break;
+		case GNC_Comand::CM_DESTROY:
+			Gnc_step.at(step).executed=true;
 				oapiDeleteVessel(GetHandle());
 				break;
-			case GNC_Comand::CM_EXPLODE:
-				Gnc_step[step].executed=true;
-				boom();
-				break;
-			case GNC_Comand::CM_NOLINE:
-		break;
-
+		case GNC_Comand::CM_EXPLODE:
+			Gnc_step.at(step).executed=true;
+			boom();
+			break;
+		case GNC_Comand::CM_NOLINE:
+			break;
 		}
-	
-	
 	}
-	return;
 }
 
 void Multistage2026::VinkaEngine(int step){
-	double DesiredEngineLevel=(Gnc_step[step].val_init+(Gnc_step[step].val_fin-Gnc_step[step].val_init)*(MET-Gnc_step[step].time_init)/(Gnc_step[step].time_fin-Gnc_step[step].time_init))/100;
+	double DesiredEngineLevel=(Gnc_step.at(step).val_init+(Gnc_step.at(step).val_fin-Gnc_step.at(step).val_init)*(MET-Gnc_step.at(step).time_init)/(Gnc_step.at(step).time_fin-Gnc_step.at(step).time_init))/100;
 	SetThrusterGroupLevel(THGROUP_MAIN,DesiredEngineLevel);
-	return;
 }
 
-
 void Multistage2026::VinkaRoll(int step){
-	//double DesiredPitch=(Gnc_step[step].val_init+(Gnc_step[step].val_fin-Gnc_step[step].val_init)*(MET-Gnc_step[step].time_init)/((Gnc_step[VinkaFindFirstPitch()].time-1)-Gnc_step[step].time_init))*RAD;//88*RAD;
-	double DesiredPitch=(Gnc_step[step].val_init+(Gnc_step[step].val_fin-Gnc_step[step].val_init)*(MET-Gnc_step[step].time_init)/((Gnc_step[step].time_fin)-Gnc_step[step].time_init))*RAD;//88*RAD;
+	//double DesiredPitch=(Gnc_step.at(step).val_init+(Gnc_step.at(step).val_fin-Gnc_step.at(step).val_init)*(MET-Gnc_step.at(step).time_init)/((Gnc_step[VinkaFindFirstPitch()].time-1)-Gnc_step.at(step).time_init))*RAD;//88*RAD;
+	double DesiredPitch=(Gnc_step.at(step).val_init+(Gnc_step.at(step).val_fin-Gnc_step.at(step).val_init)*(MET-Gnc_step.at(step).time_init)/((Gnc_step.at(step).time_fin)-Gnc_step.at(step).time_init))*RAD;//88*RAD;
 	TgtPitch=DesiredPitch;
-	double RollRate=180/((Gnc_step[step].time_fin-1)-Gnc_step[step].time_init);
-	VinkaAzimuth=Gnc_step[step].trval3*RAD;
-	VinkaMode=Gnc_step[step].trval5;
+	double RollRate=180/((Gnc_step.at(step).time_fin-1)-Gnc_step.at(step).time_init);
+	VinkaAzimuth=Gnc_step.at(step).trval3*RAD;
+	VinkaMode=Gnc_step.at(step).trval5;
 	Attitude(DesiredPitch,(0.5*(1-VinkaMode)*PI),VinkaAzimuth,2,RollRate,5);
-
-	return;
 }
 
 void Multistage2026::VinkaPitch(int step){
-	double DesiredPitch=(Gnc_step[step].val_init+(Gnc_step[step].val_fin-Gnc_step[step].val_init)*(MET-Gnc_step[step].time_init)/(Gnc_step[step].time_fin-Gnc_step[step].time_init))*RAD;//Gnc_step[step].val_fin*RAD;
+	double DesiredPitch=(Gnc_step.at(step).val_init+(Gnc_step.at(step).val_fin-Gnc_step.at(step).val_init)*(MET-Gnc_step.at(step).time_init)/(Gnc_step.at(step).time_fin-Gnc_step.at(step).time_init))*RAD;//Gnc_step.at(step).val_fin*RAD;
 	TgtPitch=DesiredPitch;
 	if(spinning){
 		Attitude(DesiredPitch,GetBank(),GetProperHeading());
-	}else{
-		Attitude(DesiredPitch,(0.5*(1-VinkaMode)*PI),GetProperHeading(),10,10,10);}
-	return;
+	} else {
+		Attitude(DesiredPitch,(0.5*(1-VinkaMode)*PI),GetProperHeading(),10,10,10);
+	}
 }
 
 void Multistage2026::VinkaAutoPilot(){
-	for(int q=1;q<=VinkaGetStep(MET);q++){
-	VinkaConsumeStep(q);
-		}
-	return;
+	for(int q = 1; q <= VinkaGetStep(MET); q++){
+		VinkaConsumeStep(q);
+	}
 }
 
-
-void Multistage2026::VinkaDeleteStep(int q)
-{
-	if(Gnc_step.at(q).gnc_Comand==GNC_Comand::CM_ORBIT){wPeg=false;}
-	if(Gnc_step.at(q).gnc_Comand==GNC_Comand::CM_DISABLE_ROLL){rolldisabled=false;}
-	if(Gnc_step.at(q).gnc_Comand==GNC_Comand::CM_DISABLE_PITCH){pitchdisabled=false;}
-	if(Gnc_step.at(q).gnc_Comand==GNC_Comand::CM_DISABLE_JETTISON){AJdisabled=false;}
+void Multistage2026::VinkaDeleteStep(int q){
+	if(Gnc_step.at(q).gnc_Comand==GNC_Comand::CM_ORBIT){
+		wPeg=false;
+	}
+	if(Gnc_step.at(q).gnc_Comand==GNC_Comand::CM_DISABLE_ROLL){
+		rolldisabled=false;
+	}
+	if(Gnc_step.at(q).gnc_Comand==GNC_Comand::CM_DISABLE_PITCH){
+		pitchdisabled=false;
+	}
+	if(Gnc_step.at(q).gnc_Comand==GNC_Comand::CM_DISABLE_JETTISON){
+		AJdisabled=false;
+	}
 	Gnc_step.at(q).gnc_Comand=GNC_Comand::CM_NOLINE;
-	Gnc_step.at(q).Comand.clear();
+	
+	Gnc_step.at(q).Comand = "";
+	
 	VinkaRearrangeSteps();
+	
 	nsteps=VinkaCountSteps();
+	
 	VinkaCheckInitialMet();
 }
 
 void Multistage2026::VinkaRearrangeSteps(){
-    std::vector<GNC_STEP> valid_steps;
-    
-    for (auto& step : Gnc_step) {
-        if (step.gnc_Comand != GNC_Comand::CM_NOLINE) {
-            valid_steps.push_back(step);
-        }
-    }
+	
+	int index=1;
+	std::array<GNC_STEP, 150> trans;
+	GNC_STEP temp;
+	//initialize trans;
+	for(int q = 0; q < 150; q++){
+		trans.at(q).gnc_Comand=GNC_Comand::CM_NOLINE;
+		trans.at(q).Comand = "";
+		trans.at(0).time_fin=-10000; // this should be unnecessary but who knows...
+	}
 
-    if (valid_steps.empty()) return;
+	for(int i = 1; i < 150; i++){
+		if(Gnc_step.at(i).gnc_Comand!=GNC_Comand::CM_NOLINE){
+			trans.at(index)=Gnc_step.at(i);
+			index++;
+		}
+	}
 
-    std::sort(valid_steps.begin(), valid_steps.end(), [](const GNC_STEP& a, const GNC_STEP& b) {
-        return a.time < b.time;
-    });
+	for(int q = 1; q < 150; q++){
+		Gnc_step.at(q) = trans.at(q);
+	}
 
-    for (auto& step : Gnc_step) {
-        step.gnc_Comand = GNC_Comand::CM_NOLINE;
-    }
+	for(int k = 1; k < index - 1; k++){
+		for(int j = k + 1; j < index; j++){
+			if(Gnc_step.at(k).time > Gnc_step.at(j).time){
+				temp=Gnc_step.at(k);
+				Gnc_step.at(k) = Gnc_step.at(j);
+				Gnc_step.at(j) = temp;
+			}
+		}
+	}
 
-    for (size_t i = 0; i < valid_steps.size() && i < Gnc_step.size(); i++) {
-        Gnc_step.at(i) = valid_steps.at(i);
-    }
 }
 
 int Multistage2026::VinkaCountSteps(){
-    int q = 0;
-    for (size_t i = 0; i < Gnc_step.size(); i++)
-    {
-        if (Gnc_step.at(i).gnc_Comand != GNC_Comand::CM_NOLINE)
-        {
-            q++;
-        }
-    }
-    return q;
+	
+	int q=0;
+	for(int i = 1; i < 150; i++){
+		if(Gnc_step.at(i).gnc_Comand!=GNC_Comand::CM_NOLINE){
+			q+=1;
+		}
+	}
+
+	return q;
 }
 
 GNC_STEP Multistage2026::VinkaComposeSpecificGNCSteps(GNC_STEP gnc)
 {
 	gnc.executed=false;
-		 for(int z=0;z<128;z++){
-		  gnc.Comand[z]=tolower(gnc.Comand[z]);
-														}
+	for(int z = 0; z < 128; z++){
+		gnc.Comand.at(z) = tolower(gnc.Comand.at(z));
+	}
 		
-		if(gnc.Comand == "engine"){
-			gnc.gnc_Comand=GNC_Comand::CM_ENGINE;
-		}else if(gnc.Comand == "roll"){
-			gnc.gnc_Comand=GNC_Comand::CM_ROLL;
-		}else if(gnc.Comand == "pitch"){
-			gnc.gnc_Comand=GNC_Comand::CM_PITCH;
-		}else if(gnc.Comand == "fairing"){
-			gnc.gnc_Comand=GNC_Comand::CM_FAIRING;
-		}else if(gnc.Comand == "les"){
-			gnc.gnc_Comand=GNC_Comand::CM_LES;
-		}else if(gnc.Comand == "disablepitch"){
-			gnc.gnc_Comand=GNC_Comand::CM_DISABLE_PITCH;
-		}else if(gnc.Comand == "disableroll"){
-			gnc.gnc_Comand=GNC_Comand::CM_DISABLE_ROLL;
-		}else if(gnc.Comand == "disablejettison"){
-			gnc.gnc_Comand=GNC_Comand::CM_DISABLE_JETTISON;
-		}else if(gnc.Comand == "jettison"){
-			gnc.gnc_Comand=GNC_Comand::CM_JETTISON;
-		}else if(gnc.Comand == "target"){
-			gnc.gnc_Comand=GNC_Comand::CM_TARGET;
-		}else if(gnc.Comand == "aoa"){
-			gnc.gnc_Comand=GNC_Comand::CM_AOA;
-		}else if(gnc.Comand == "attitude"){
-			gnc.gnc_Comand=GNC_Comand::CM_ATTITUDE;
-		}else if(gnc.Comand == "spin"){
-			gnc.gnc_Comand=GNC_Comand::CM_SPIN;
-		}else if(gnc.Comand == "inverse"){
-			gnc.gnc_Comand=GNC_Comand::CM_INVERSE;
-		}else if(gnc.Comand == "engineout"){
-			gnc.gnc_Comand=GNC_Comand::CM_ENGINEOUT;
-		}else if(gnc.Comand == "orbit"){
-			gnc.gnc_Comand=GNC_Comand::CM_ORBIT;
-		}else if(gnc.Comand == "defap"){
-			gnc.gnc_Comand=GNC_Comand::CM_DEFAP;
-		}else if(gnc.Comand == "glimit"){
-			gnc.gnc_Comand=GNC_Comand::CM_GLIMIT;
-		}else if(gnc.Comand == "destroy"){
-			gnc.gnc_Comand=GNC_Comand::CM_DESTROY;
-		}else if(gnc.Comand == "explode"){
-			gnc.gnc_Comand=GNC_Comand::CM_EXPLODE;
-		}else if(gnc.Comand == "noline"){
-			gnc.gnc_Comand=GNC_Comand::CM_NOLINE;
-		}
+	if(gnc.Comand == "engine"){
+		gnc.gnc_Comand=GNC_Comand::CM_ENGINE;
+	}else if(gnc.Comand == "roll"){
+		gnc.gnc_Comand=GNC_Comand::CM_ROLL;
+	}else if(gnc.Comand == "pitch"){
+		gnc.gnc_Comand=GNC_Comand::CM_PITCH;
+	}else if(gnc.Comand == "fairing"){
+		gnc.gnc_Comand=GNC_Comand::CM_FAIRING;
+	}else if(gnc.Comand == "les"){
+		gnc.gnc_Comand=GNC_Comand::CM_LES;
+	}else if(gnc.Comand == "disablepitch"){
+		gnc.gnc_Comand=GNC_Comand::CM_DISABLE_PITCH;
+	}else if(gnc.Comand == "disableroll"){
+		gnc.gnc_Comand=GNC_Comand::CM_DISABLE_ROLL;
+	}else if(gnc.Comand == "disablejettison"){
+		gnc.gnc_Comand=GNC_Comand::CM_DISABLE_JETTISON;
+	}else if(gnc.Comand == "jettison"){
+		gnc.gnc_Comand=GNC_Comand::CM_JETTISON;
+	}else if(gnc.Comand == "target"){
+		gnc.gnc_Comand=GNC_Comand::CM_TARGET;
+	}else if(gnc.Comand == "aoa"){
+		gnc.gnc_Comand=GNC_Comand::CM_AOA;
+	}else if(gnc.Comand == "attitude"){
+		gnc.gnc_Comand=GNC_Comand::CM_ATTITUDE;
+	}else if(gnc.Comand == "spin"){
+		gnc.gnc_Comand=GNC_Comand::CM_SPIN;
+	}else if(gnc.Comand == "inverse"){
+		gnc.gnc_Comand=GNC_Comand::CM_INVERSE;
+	}else if(gnc.Comand == "engineout"){
+		gnc.gnc_Comand=GNC_Comand::CM_ENGINEOUT;
+	}else if(gnc.Comand == "orbit"){
+		gnc.gnc_Comand=GNC_Comand::CM_ORBIT;
+	}else if(gnc.Comand == "defap"){
+		gnc.gnc_Comand=GNC_Comand::CM_DEFAP;
+	}else if(gnc.Comand == "glimit"){
+		gnc.gnc_Comand=GNC_Comand::CM_GLIMIT;
+	}else if(gnc.Comand == "destroy"){
+		gnc.gnc_Comand=GNC_Comand::CM_DESTROY;
+	}else if(gnc.Comand == "explode"){
+		gnc.gnc_Comand=GNC_Comand::CM_EXPLODE;
+	}else if(gnc.Comand == "noline"){
+		gnc.gnc_Comand=GNC_Comand::CM_NOLINE;
+	}
 
-		Gnc_step.at(0).time_fin=-10000;
+	Gnc_step.at(0).time_fin=-10000;
 
-		switch(gnc.gnc_Comand){
+	switch(gnc.gnc_Comand){
 		
 		case GNC_Comand::CM_ENGINE:
 			gnc.val_init=gnc.trval1;
 			gnc.val_fin=gnc.trval2;
-			if(gnc.val_fin){gnc.val_fin=-1;}
+			if(gnc.val_fin==0){gnc.val_fin=-1;}
 			gnc.time_init=gnc.time;
 			gnc.duration=gnc.trval3;
-			if(gnc.duration){gnc.duration=0.01;}
+			if(gnc.duration==0){gnc.duration=0.01;}
 			gnc.time_fin=gnc.time_init+gnc.duration;
 			break;
 
@@ -909,7 +950,7 @@ GNC_STEP Multistage2026::VinkaComposeSpecificGNCSteps(GNC_STEP gnc)
 			if(gnc.duration<=0){
 		
 			//	if(i<nsteps){
-			//		gnc.time_fin=Gnc_step[i+1].time;
+			//		gnc.time_fin=Gnc_step.at(i + 1).time;
 			//	}else{
 					gnc.time_fin=gnc.time_init+60;
 				//}
@@ -928,7 +969,7 @@ GNC_STEP Multistage2026::VinkaComposeSpecificGNCSteps(GNC_STEP gnc)
 			if(gnc.duration<=0){
 				
 			//	if(i<nsteps){
-				//	gnc.time_fin=Gnc_step[i+1].time;
+				//	gnc.time_fin=Gnc_step.at(i + 1).time;
 				//}else{
 					gnc.time_fin=gnc.time_init+60;
 				//}
@@ -940,7 +981,7 @@ GNC_STEP Multistage2026::VinkaComposeSpecificGNCSteps(GNC_STEP gnc)
 			gnc.time_init=gnc.time;
 
 			//if(i<nsteps){
-					//gnc.time_fin=Gnc_step[i+1].time;
+					//gnc.time_fin=Gnc_step.at(i + 1).time;
 				//}else{
 					gnc.time_fin=gnc.time_init+60;
 				//}
@@ -967,14 +1008,13 @@ GNC_STEP Multistage2026::VinkaComposeSpecificGNCSteps(GNC_STEP gnc)
 			tgtperi=gnc.trval1*1000;
 			tgtinc=gnc.trval3*RAD;
 			VinkaMode=gnc.trval4;
-			if(VinkaMode){VinkaMode=1;}
+			if(VinkaMode==0){VinkaMode=1;}
 			GT_InitPitch=gnc.trval5*RAD;
-			if(GT_InitPitch){GT_InitPitch=GT_IP_Calculated;}
+			if(GT_InitPitch==0){GT_InitPitch=GT_IP_Calculated;}
 			tgtabside=gnc.trval6*1000;
 			wPeg=true;
 			CalculateTargets();
-			logbuff = std::format("{}: Orbit Call Found! Targets: Apogee:{:.1f} Perigee:{:.1f} Inclination:{:.1f} Mode:{:.1f} GT initial Pitch: {:.1f} Abside:{:.1f}",GetName(),tgtapo,tgtperi,tgtinc*DEG,VinkaMode,GT_InitPitch*DEG,tgtabside);
-			oapiWriteLog(const_cast<char *>(logbuff.c_str()));
+			oapiWriteLogV("%s: Orbit Call Found! Targets: Apogee:%.1f Perigee:%.1f Inclination:%.1f Mode:%.1f GT initial Pitch: %.1f Abside:%.1f",GetName(),tgtapo,tgtperi,tgtinc*DEG,VinkaMode,GT_InitPitch*DEG,tgtabside);
 			break;
 		case GNC_Comand::CM_DEFAP:
 			gnc.time_init=gnc.time;
@@ -998,23 +1038,25 @@ GNC_STEP Multistage2026::VinkaComposeSpecificGNCSteps(GNC_STEP gnc)
 		}
 	
 	if(!wPeg){
-	VinkaUpdateRollTime();
+		VinkaUpdateRollTime();
 	}
 
 	return gnc;
 }
 
-void Multistage2026::VinkaAddStep(const std::string input)
-{
+void Multistage2026::VinkaAddStep(const std::string input){
+	
 	std::string line = input;
 	
-		for(int i=0;i<6;i++){Gnc_step.at(nsteps + 1).wValue[i]=false;}
+		for(int i = 0; i < 6; i++){
+			Gnc_step.at(nsteps+1).wValue.at(i) = false;
+		}
 		
 		std::size_t findEqual=line.find_first_of("=");
 		if(findEqual!=line.npos){
 		std::string mettime=line.substr(0,findEqual);
 		
-		Gnc_step.at(nsteps + 1).time=atof(&mettime[0]);
+		Gnc_step.at(nsteps+1).time=atof(&mettime.at(0));
 
 		std::size_t findLineEnd=line.find_first_of(")");
 		if(findLineEnd!=line.npos){
@@ -1025,11 +1067,11 @@ void Multistage2026::VinkaAddStep(const std::string input)
 			Gnc_step.at(nsteps+1).Comand = comand;
 			
 			std::string values=line.substr(findOpenP+1,findLineEnd-findOpenP-1);
-				Gnc_step.at(nsteps + 1).wValue[0]=true;			
+				Gnc_step.at(nsteps+1).wValue.at(0)=true;			
 			std::size_t findFirstComma=values.find_first_of(",");
 			if(findFirstComma!=values.npos){
 				value1=values.substr(0,findFirstComma);
-			Gnc_step.at(nsteps + 1).wValue[1]=true;
+			Gnc_step.at(nsteps+1).wValue.at(1)=true;
 			
 
 			std::size_t findSecondComma=values.find_first_of(",",findFirstComma+1);
@@ -1037,47 +1079,47 @@ void Multistage2026::VinkaAddStep(const std::string input)
 			if(findSecondComma!=values.npos){
 				
 				value2=values.substr(findFirstComma+1,findSecondComma-findFirstComma-1);
-				Gnc_step.at(nsteps + 1).wValue[2]=true;
+				Gnc_step.at(nsteps+1).wValue.at(2)=true;
 
 			std::size_t findThirdComma=values.find_first_of(",",findSecondComma+1);
 				
 			if(findThirdComma!=values.npos){
 				
 				value3=values.substr(findSecondComma+1,findThirdComma-findSecondComma-1);
-				Gnc_step.at(nsteps + 1).wValue[3]=true;
+				Gnc_step.at(nsteps+1).wValue.at(3)=true;
 
 			std::size_t findFourthComma=values.find_first_of(",",findThirdComma+1);
 			if(findFourthComma!=values.npos){	
 				value4=values.substr(findThirdComma+1,findFourthComma-findThirdComma-1);
-				Gnc_step.at(nsteps + 1).wValue[4]=true;
+				Gnc_step.at(nsteps+1).wValue.at(4)=true;
 			std::size_t findFifthComma=values.find_first_of(",",findFourthComma+1);
 			if(findFifthComma!=values.npos){
 				value5=values.substr(findFourthComma+1,findFifthComma-findFourthComma-1);
 				value6=values.substr(findFifthComma+1,std::string::npos);
-				Gnc_step.at(nsteps + 1).wValue[5]=true;
+				Gnc_step.at(nsteps+1).wValue.at(5)=true;
 			}else{ value5=values.substr(findFourthComma+1,std::string::npos);}
 			}else{ value4=values.substr(findThirdComma+1,values.npos);}
 			}else{ value3=values.substr(findSecondComma+1,values.npos);}
 			}else{ value2=values.substr(findFirstComma+1,values.npos);}
 			}else{ value1=values.substr(0,values.npos);}
 		}}
-		if(Gnc_step.at(nsteps + 1).wValue[0]){	Gnc_step.at(nsteps + 1).trval1=atof(&value1[0]);}else{Gnc_step.at(nsteps + 1).trval1=0;}
-		if(Gnc_step.at(nsteps + 1).wValue[1]){	Gnc_step.at(nsteps + 1).trval2=atof(&value2[0]);}else{Gnc_step.at(nsteps + 1).trval2=0;}
-		if(Gnc_step.at(nsteps + 1).wValue[2]){	Gnc_step.at(nsteps + 1).trval3=atof(&value3[0]);}else{Gnc_step.at(nsteps + 1).trval3=0;}
-		if(Gnc_step.at(nsteps + 1).wValue[3]){	Gnc_step.at(nsteps + 1).trval4=atof(&value4[0]);}else{Gnc_step.at(nsteps + 1).trval4=0;}
-		if(Gnc_step.at(nsteps + 1).wValue[4]){	Gnc_step.at(nsteps + 1).trval5=atof(&value5[0]);}else{Gnc_step.at(nsteps + 1).trval5=0;}
-		if(Gnc_step.at(nsteps + 1).wValue[5]){	Gnc_step.at(nsteps + 1).trval6=atof(&value6[0]);}else{Gnc_step.at(nsteps + 1).trval6=0;}
+		if(Gnc_step.at(nsteps+1).wValue.at(0)){	Gnc_step.at(nsteps+1).trval1=atof(&value1.at(0));}else{Gnc_step.at(nsteps+1).trval1=0;}
+		if(Gnc_step.at(nsteps+1).wValue.at(1)){	Gnc_step.at(nsteps+1).trval2=atof(&value2.at(0));}else{Gnc_step.at(nsteps+1).trval2=0;}
+		if(Gnc_step.at(nsteps+1).wValue.at(2)){	Gnc_step.at(nsteps+1).trval3=atof(&value3.at(0));}else{Gnc_step.at(nsteps+1).trval3=0;}
+		if(Gnc_step.at(nsteps+1).wValue.at(3)){	Gnc_step.at(nsteps+1).trval4=atof(&value4.at(0));}else{Gnc_step.at(nsteps+1).trval4=0;}
+		if(Gnc_step.at(nsteps+1).wValue.at(4)){	Gnc_step.at(nsteps+1).trval5=atof(&value5.at(0));}else{Gnc_step.at(nsteps+1).trval5=0;}
+		if(Gnc_step.at(nsteps+1).wValue.at(5)){	Gnc_step.at(nsteps+1).trval6=atof(&value6.at(0));}else{Gnc_step.at(nsteps+1).trval6=0;}
 
 		}else{
-		Gnc_step.at(nsteps + 1).Comand = "noline";	
-		Gnc_step.at(nsteps + 1).gnc_Comand = GNC_Comand::CM_NOLINE;
-		Gnc_step.at(nsteps + 1).time_fin=-10000;
-		Gnc_step.at(nsteps + 1).trval1=0;
-		Gnc_step.at(nsteps + 1).trval2=0;
-		Gnc_step.at(nsteps + 1).trval3=0;
-		Gnc_step.at(nsteps + 1).trval4=0;
-		Gnc_step.at(nsteps + 1).trval5=0;
-		Gnc_step.at(nsteps + 1).trval6=0;
+		Gnc_step.at(nsteps+1).Comand = "noline";	
+		Gnc_step.at(nsteps+1).gnc_Comand=GNC_Comand::CM_NOLINE;
+		Gnc_step.at(nsteps+1).time_fin=-10000;
+		Gnc_step.at(nsteps+1).trval1=0;
+		Gnc_step.at(nsteps+1).trval2=0;
+		Gnc_step.at(nsteps+1).trval3=0;
+		Gnc_step.at(nsteps+1).trval4=0;
+		Gnc_step.at(nsteps+1).trval5=0;
+		Gnc_step.at(nsteps+1).trval6=0;
 		}
 
 	
@@ -1095,21 +1137,22 @@ void Multistage2026::VinkaAddStep(const std::string input)
 		std::size_t foundDisJett=line.find("jettison");
 
 			if(foundDisPitch!=std::string::npos){
-				Gnc_step.at(nsteps + 1).Comand = "disablepitch";
+				Gnc_step.at(nsteps+1).Comand = "disablepitch";
 			}else if(foundDisRoll!=std::string::npos){
-				Gnc_step.at(nsteps + 1).Comand = "disableroll";
+				Gnc_step.at(nsteps+1).Comand = "disableroll";
 			}else if(foundDisJett!=std::string::npos){
-				Gnc_step.at(nsteps + 1).Comand = "disablejettison";
+				Gnc_step.at(nsteps+1).Comand = "disablejettison";
 			}
 
 		}else if(foundPlay!=std::string::npos){
-			std::size_t findopen=line.find_first_of("(");
-			std::size_t findclose=line.find_first_of(")");
-			std::string filename=line.substr(findopen+1,findclose-findopen-1);
-			filename = Gnc_step.at(nsteps + 1).trchar;
+		std::size_t findopen=line.find_first_of("(");
+		std::size_t findclose=line.find_first_of(")");
+		std::string filename=line.substr(findopen+1,findclose-findopen-1);
+			Gnc_step.at(nsteps+1).Comand = "playsound";
+			filename = Gnc_step.at(nsteps+1).trchar;
 		}
 		
-		Gnc_step.at(nsteps + 1)=VinkaComposeSpecificGNCSteps(Gnc_step.at(nsteps + 1));
+		Gnc_step.at(nsteps+1)=VinkaComposeSpecificGNCSteps(Gnc_step.at(nsteps+1));
 	
 	VinkaRearrangeSteps();
 	nsteps=VinkaCountSteps();	
@@ -1117,22 +1160,26 @@ void Multistage2026::VinkaAddStep(const std::string input)
 }
 
 void Multistage2026::WriteGNCFile(){
-FILEHANDLE GncFile;
-std::string filename_Str = std::format("{}_{:.2f}_GNC.txt",GetName(),oapiGetSysMJD());
-std::filesystem::path filenmbuff = Multistage2026_folder / Guidance_folder / filename_Str;
-GncFile = oapiOpenFile(filenmbuff.c_str(),FILE_OUT,CONFIG);
-std::string buffer = "Multistage 2015 Automatically Generated Guidance File";
-oapiWriteLine(GncFile, buffer.c_str());
-buffer = std::format("Vehicle: {}",GetName());
-oapiWriteLine(GncFile, buffer.c_str());
 
-for(int i=1;i<=nsteps;i++)
-{
-	buffer = std::format("{:.3f} ={}({:.2f},{:.2f},{:.2f},{:.2f},{:.2f},{:.2f})",Gnc_step.at(i).time_init,Gnc_step.at(i).Comand, Gnc_step.at(i).trval1,Gnc_step.at(i).trval2,Gnc_step.at(i).trval3,Gnc_step.at(i).trval4,Gnc_step.at(i).trval5,Gnc_step.at(i).trval6);
+	FILEHANDLE GncFile;
+	
+	std::string filename_Str = std::format("{}_{:.2f}_GNC.txt",GetName(),oapiGetSysMJD());
+
+	std::filesystem::path filenmbuff = Multistage2026_folder / Guidance_folder / filename_Str;
+
+	GncFile = oapiOpenFile(filenmbuff.c_str(),FILE_OUT,CONFIG);
+
+	std::string buffer = "Multistage 2026 Automatically Generated Guidance File";
 	oapiWriteLine(GncFile, buffer.c_str());
-}
+	buffer = std::format("Vehicle: {}", GetName());
+	oapiWriteLine(GncFile, buffer.c_str());
+
+	for(int i = 1; i <= nsteps; i++){
+		buffer = std::format("{:.3f} ={}({:.2f},{:.2f},{:.2f},{:.2f},{:.2f},{:.2f})",Gnc_step.at(i).time_init,Gnc_step.at(i).Comand, Gnc_step.at(i).trval1,Gnc_step.at(i).trval2,Gnc_step.at(i).trval3,Gnc_step.at(i).trval4,Gnc_step.at(i).trval5,Gnc_step.at(i).trval6);
+		oapiWriteLine(GncFile, buffer.c_str());
+	}
 
 
-oapiCloseFile(GncFile,FILE_OUT);
-	return;
+	oapiCloseFile(GncFile,FILE_OUT);
+		return;
 }

@@ -4,17 +4,19 @@ cmake_policy(SET CMP0002 NEW)  # evitar duplicación de targets
 cmake_policy(SET CMP0079 NEW)  # permitir link externo a targets
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_CXX_EXTENSIONS ON)
 
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Debug CACHE STRING "Build type (Debug or Release)" FORCE)
 endif()
 
+
 # Ruta base del SDK
 set(ORBITER_ROOT "$ENV{HOME}/orbiter_test/Orbiter")
 
 # Submódulos
-## set(MULTISTAGE2015_MFD_PATH ${ORBITER_ROOT}/Orbitersdk/samples/Multistage2015_MFD)
+set(MULTISTAGE2015_MFD_PATH ${ORBITER_ROOT}/Orbitersdk/samples/Multistage2015_MFD)
 set(STAGE2010_PATH ${ORBITER_ROOT}/Orbitersdk/samples/Stage_dll_2010)
 
 # Salidas
@@ -39,5 +41,8 @@ add_subdirectory(MS_Camera)
 add_subdirectory(boom)
 
 # Subdirectorios externos (con carpetas de build distintas)
-## add_subdirectory(${MULTISTAGE2015_MFD_PATH} "${CMAKE_BINARY_DIR}/build_MFD")
+add_subdirectory(${MULTISTAGE2015_MFD_PATH} "${CMAKE_BINARY_DIR}/build_MFD")
 add_subdirectory(${STAGE2010_PATH} "${CMAKE_BINARY_DIR}/build_stage2010")
+
+add_compile_options(-PIC)
+add_compile_options(-g)

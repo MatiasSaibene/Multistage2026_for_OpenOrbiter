@@ -1,5 +1,6 @@
 #include "boom.hpp"
 #define ORBITER_MODULE
+#define STRICT
 
 //Class creation
 boom::boom(OBJHANDLE hObj, int fmodel) : VESSEL4(hObj, fmodel){

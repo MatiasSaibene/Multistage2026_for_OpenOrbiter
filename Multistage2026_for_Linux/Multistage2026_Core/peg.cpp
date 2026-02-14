@@ -1,11 +1,45 @@
 #define STRICT
+/*********************************************************************************************
+This file is part of Multistage2015 project
+Copyright belogs to Fred18 for module implementation and its code
+Biggest Credit goes to Vinka for his idea of Multistage.dll. None of his code was used here since his addons are all closed source.
+Credit goes to Face for having pointed me to the GetPrivateProfileString
+Credit goes to Hlynkacg for his OrientForBurn function which was the basis on which I developed the Attitude Function.
+
+Multistage2015 is distributed FREEWARE. Its code is distributed along with the dll. Nobody is authorized to exploit the module or the code or parts of them commercially directly or indirectly.
+You CAN distribute the dll together with your addon but in this case you MUST:
+-	Include credit to the author in your addon documentation;
+-	Add to the addon documentation the official link of Orbit Hangar Mods for download and suggest to download the latest and updated version of the module.
+You CAN use parts of the code of Multistage2015, but in this case you MUST:
+-	Give credits in your copyright header and in your documentation for the part you used.
+-	Let your project be open source and its code available for at least visualization by other users.
+You CAN NOT use the entire code for making and distributing the very same module claiming it as your work entirely or partly.
+You CAN NOT claim that Multistage2015 is an invention of yourself or a work made up by yourself, or anyhow let intend that is not made and coded by the author.
+You install and use Multistage2015 at your own risk, author will not be responsible for any claim or damage subsequent to its use or for the use of part of it or of part of its code.
+*********************************************************************************************/
+
+// ==============================================================
+//						MultiStage2015
+//                  
+//					       By Fred18
+//                  
+//
+// peg.cpp
+// ==============================================================
+
+
+
+
+
+//############################################################################//
+
+#define STRICT
 #include "../../include/Orbitersdk.h"
 #include "Multistage2026.hpp"
 
+
 VECTOR3 Multistage2026::GetAPTargets(){
-
 	return _V(tgtapo, tgtperi, tgtinc);
-
 }
 
 //Get Vehicle Acceleration along Velocity Vector
@@ -70,9 +104,12 @@ void Multistage2026::InitPEG(){
 
 }
 
-void Multistage2026::CalculateTargets(){
-	if ((tgtabside > tgtapo) || (tgtabside < tgtperi)){
-		if (tgtperi >= 80000){
+void Multistage2026::CalculateTargets()
+{
+	if ((tgtabside > tgtapo) || (tgtabside < tgtperi))
+	{
+		if (tgtperi >= 80000)
+		{
 			tgtabside = tgtperi;
 		} else {
 			tgtabside = tgtapo;
@@ -82,7 +119,8 @@ void Multistage2026::CalculateTargets(){
 	double atarget = (tgtapo + rt) / (1 + etarget);
 	epsfin = -mu / (2 * atarget);
 	double vr_target = sqrt(mu * (2 / (tgtabside + rt) - 1 / (0.5 * (tgtapo + tgtperi + 2 * rt))));
-	if (etarget == 0){
+	if (etarget == 0)
+	{
 		tgtvv = 0;
 	} else {
 		if ((tgtabside == tgtperi) || (tgtabside == tgtapo)) {
@@ -95,12 +133,11 @@ void Multistage2026::CalculateTargets(){
 	}
 }
 
-bool Multistage2026::CutoffCheck(){
+bool Multistage2026::CutoffCheck() {
 	OBJHANDLE hearth = GetSurfaceRef();
 	GetElements(hearth, el, &op, 0, 1);
 	eps = -mu / (2 * el.a);
-	
-    if(eps >= epsfin){
+	if (eps >= epsfin) {
 		killAP();
 		runningPeg = false;
 		return true;
@@ -109,19 +146,16 @@ bool Multistage2026::CutoffCheck(){
 }
 
 void Multistage2026::CalcMECO(){
-	
-    double MECO = 0;
+
+	double MECO = 0;
 	for (int i = 1; i <= NN; i++){
 		MECO += T.at(i);
 	}
 
 	MECO += MET;
-	if (MECO_Counter >= 100){
-        MECO_Counter = 0;
-    }
-
+	if (MECO_Counter >= 100) { MECO_Counter = 0; }
 	double delta = MECO - MECO_TEST;
-	coeff.at(MECO_Counter) = delta / UpdatePegTimer;
+	coeff[MECO_Counter] = delta / UpdatePegTimer;
 	double transcoeff = 0;
 	for (int h = 0; h < 100; h++){
 		transcoeff += coeff.at(h);
@@ -130,12 +164,11 @@ void Multistage2026::CalcMECO(){
 	MECO_TEST = MECO;
 	MECO_Counter++;
 
-	if (avgcoeff < 1) {
-        TMeco = MET + (MECO - MET) / (1 - avgcoeff);
-    } else {
-        TMeco = MECO;
-    }
-	
+	if (avgcoeff < 1){
+		TMeco = MET + (MECO - MET) / (1 - avgcoeff);
+	} else {
+		TMeco = MECO;
+	}
 }
 
 void Multistage2026::Navigate(){
@@ -286,41 +319,49 @@ void Multistage2026::FStaging(){
 }
 
 //void Multistage2015::PEG(){
-void Multistage2026::MajorCycle(){
+void Multistage2026::MajorCycle() {
 	CalculateTargets();
 	Navigate();
 	FStaging();
 	FEstimate();
 	CalcMECO();
-
-	for (int i = currentStage + 1; i < NN; i++){
-		DeltaA.at(i) = (mu / (r_T.at(i) * r_T.at(i)) - OmegaS.at(i) * OmegaS.at(i) * r_T.at(i)) * ((1 / (a_fin.at(i)) - (1 / (a_.at(i + 1)))));
-		DeltaB.at(i) = (mu / (r_T.at(i) * r_T.at(i)) - OmegaS.at(i) * OmegaS.at(i) * r_T.at(i)) * ((1 / v_e.at(i)) - (1 / v_e.at(i + 1))) + ((3 * OmegaS.at(i) * OmegaS.at(i) - 2 * mu / (r_T.at(i) * r_T.at(i) * r_T.at(i))) * rdot_T.at(i)) * ((1 / (a_fin.at(i)) - (1 / (a_.at(i + 1)))));
+	for (int i = currentStage + 1; i < NN; i++)
+	{
+		DeltaA[i] = (mu / (r_T[i] * r_T[i]) - OmegaS[i] * OmegaS[i] * r_T[i]) * ((1 / (a_fin[i]) - (1 / (a_[i + 1]))));
+		DeltaB[i] = (mu / (r_T[i] * r_T[i]) - OmegaS[i] * OmegaS[i] * r_T[i]) * ((1 / v_e[i]) - (1 / v_e[i + 1])) + ((3 * OmegaS[i] * OmegaS[i] - 2 * mu / (r_T[i] * r_T[i] * r_T[i])) * rdot_T[i]) * ((1 / (a_fin[i]) - (1 / (a_[i + 1]))));
 	}
 
+
+
 	double alpha = 0;
-	for (int l = J; l <= NN; l++){
-		alpha += b0(l, T.at(l));
+	for (int l = J; l <= NN; l++)
+	{
+		alpha += b0(l, T[l]);
 	}
 
 	double beta = 0;
-	for (int l = J; l <= NN; l++){
+	for (int l = J; l <= NN; l++)
+	{
 		double term = 0;
-		for (int k = J; k <= l - 1; k++){
-			term += T.at(k);
+		for (int k = J; k <= l - 1; k++)
+		{
+			term += T[k];
 		}
-		beta += b_(1, l, T.at(l)) + b0(l, T.at(l)) * term;
+		beta += b_(1, l, T[l]) + b0(l, T[l]) * term;
 	}
 
 	double gamma = 0;
-	for (int l = J; l <= NN; l++){
+	for (int l = J; l <= NN; l++)
+	{
 		double term1 = 0;
-		for (int k = J; k <= l - 1; k++){
+		for (int k = J; k <= l - 1; k++)
+		{
 			double term2 = 0;
-			for (int i = J; i <= k - 1; i++){
-				term2 += DeltaB.at(i);
+			for (int i = J; i <= k - 1; i++)
+			{
+				term2 += DeltaB[i];
 			}
-			term1 += b0(l, T.at(l)) * DeltaA.at(k) + b0(l, T.at(l)) * T.at(k) * term2 + b_(1, l, T.at(l)) * DeltaB.at(k);
+			term1 += b0(l, T[l]) * DeltaA[k] + b0(l, T[l]) * T[k] * term2 + b_(1, l, T[l]) * DeltaB[k];
 		}
 		gamma += term1;
 	}
@@ -329,49 +370,59 @@ void Multistage2026::MajorCycle(){
 	gamma += tgtvv - VertVel;
 
 	double epsilon = 0;
-	for (int l = J; l <= NN; l++){
+	for (int l = J; l <= NN; l++)
+	{
 		double term = 0;
-		for (int k = J; k <= l - 1; k++){
-			term += b0(k, T.at(k));
+		for (int k = J; k <= l - 1; k++)
+		{
+			term += b0(k, T[k]);
 		}
-		epsilon += c0(l, T.at(l)) + T.at(l) * term;
+		epsilon += c0(l, T[l]) + T[l] * term;
 	}
 
 
 	double zeta = 0;
 
-	for (int l = J; l <= NN; l++){
+	for (int l = J; l <= NN; l++)
+	{
 		double term2 = 0;
-		for (int k = J; k <= l - 1; k++){
+		for (int k = J; k <= l - 1; k++)
+		{
 			double term1 = 0;
-			for (int i = J; i <= k - 1; i++){
-				term1 += T.at(i);
+			for (int i = J; i <= k - 1; i++)
+			{
+				term1 += T[i];
 			}
-			term2 += c0(l, T.at(l)) * T.at(k) + b_(1, k, T.at(k)) * T.at(l) + b0(k, T.at(k)) * T.at(l) * term1;
+			term2 += c0(l, T[l]) * T[k] + b_(1, k, T[k]) * T[l] + b0(k, T[k]) * T[l] * term1;
 		}
-		zeta += c_(1, l, T.at(l)) + term2;
+		zeta += c_(1, l, T[l]) + term2;
 	}
 
 	double iota = 0;
-	for (int l = J; l <= NN; l++){
+	for (int l = J; l <= NN; l++)
+	{
 		double term3 = 0;
-		for (int k = J; k <= l - 1; k++){
+		for (int k = J; k <= l - 1; k++)
+		{
 			double term2 = 0;
-			for (int i = J; i <= k - 1; i++){
+			for (int i = J; i <= k - 1; i++)
+			{
 				double term1 = 0;
-				for (int m = J; m <= i - 1; m++){
+				for (int m = J; m <= i - 1; m++)
+				{
 					term1 += DeltaB[m];
 				}
-				term2 += b0(k, T.at(k)) * T.at(l) * DeltaA.at(i) + b0(k, T.at(k)) * T.at(i) * T.at(l) * term1 + b_(1, k, T.at(k)) * T.at(l) * DeltaB.at(i) + c0(l, T.at(l)) * T.at(k) * DeltaB.at(i);
+				term2 += b0(k, T[k]) * T[l] * DeltaA[i] + b0(k, T[k]) * T[i] * T[l] * term1 + b_(1, k, T[k]) * T[l] * DeltaB[i] + c0(l, T[l]) * T[k] * DeltaB[i];
 			}
-			term3 += c0(l, T.at(l)) * DeltaA.at(k) + c_(1, l, T.at(l)) * DeltaB.at(k) + term2;
+			term3 += c0(l, T[l]) * DeltaA[k] + c_(1, l, T[l]) * DeltaB[k] + term2;
 		}
 		iota += term3;
 	}
 
 	double k23 = 0;
-	for (int l = J; l <= NN; l++){
-		k23 += T.at(l);
+	for (int l = J; l <= NN; l++)
+	{
+		k23 += T[l];
 	}
 
 	k23 = k23 * VertVel;
@@ -380,24 +431,35 @@ void Multistage2026::MajorCycle(){
 	A[J] = (gamma * zeta - beta * lambda) / (alpha * zeta - beta * epsilon);
 	B[J] = (alpha * lambda - gamma * epsilon) / (alpha * zeta - beta * epsilon);
 
+
+
+
 	double transvarA = 0;
-	for (int l = J; l <= NN; l++){
+	for (int l = J; l <= NN; l++)
+	{
 		double term1 = 0;
-		for (int k = J; k < l - 1; k++){
-			term1 += DeltaB.at(k);
+		for (int k = J; k < l - 1; k++)
+		{
+			term1 += DeltaB[k];
 		}
-		transvarA += DeltaA.at(l) + B.at(1) * T.at(l) + T.at(l) * term1;
+		transvarA += DeltaA[l] + B[1] * T[l] + T[l] * term1;
 	}
+
 
 	double transvarB = 0;
-	for (int l = J; l <= NN; l++){
-		transvarB += DeltaB.at(l);
+	for (int l = J; l <= NN; l++)
+	{
+		transvarB += DeltaB[l];
 	}
 
-	for (int l = J + 1; l <= NN; l++){
-		A.at(l) = A.at(l - 1) + transvarA;
-		B.at(l) = B.at(l - 1) + transvarB;
+
+
+	for (int l = J + 1; l <= NN; l++)
+	{
+		A[l] = A[l - 1] + transvarA;
+		B[l] = B[l - 1] + transvarB;
 	}
+
 
 }
 
@@ -415,36 +477,41 @@ void Multistage2026::PEG() {
 
 	double arg = 0;
 
-	if ((A.at(J) < 10) && (A.at(J) > -10)){
+	if ((A[J] < 10) && (A[J] > -10))
+	{
 		//arg=A[J]+B[J]*oapiGetSimStep()+g_term+cent_term;
-		arg = A.at(J) + B.at(J) * UpdatePegTimer + g_term + cent_term;
+		arg = A[J] + B[J] * UpdatePegTimer + g_term + cent_term;
 	} else {
 		InitPEG();
 	}
 
-	if (abs(arg) < sin(PegPitchLimit)){
+
+	//	if(J==1){pitchlimit=35*RAD;}else{pitchlimit=35*RAD;} //For future refinery of peg program start
+
+	if (abs(arg) < sin(PegPitchLimit))
+	{
 		PegDesPitch = asin(arg);
 	} else {
 		PegDesPitch = PegPitchLimit * SignOf(arg);//*(abs(arg)/arg);
 	}
-
-	if (abs(arg) < 1){
+	if (abs(arg) < 1)
+	{
 		TgtPitch = asin(arg);
 	} else {
 		TgtPitch = 90 * RAD * SignOf(arg);
-	}
+	};
 
 	// ACCOUNT FOR THRUST NOT IN INLINE WITH VEHICLE
 	VECTOR3 thrustVector;
 	GetThrustVector(thrustVector);
-	if (length(thrustVector) > 0){
+	if (length(thrustVector) > 0)
+	{
 		normalise(thrustVector);
 		PegDesPitch -= asin(thrustVector.y);
 		TgtPitch -= asin(thrustVector.y);
 	}
 
 	Attitude(PegDesPitch, (0.5 * (1 - VinkaMode) * PI), GetProperHeading(), 8, 5, 8);
-
 }
 
 void Multistage2026::SetPegMajorCycleInterval(double newinterval){
@@ -454,4 +521,3 @@ void Multistage2026::SetPegMajorCycleInterval(double newinterval){
 void Multistage2026::SetPegPitchLimit(double newlimit){
 	PegPitchLimit = newlimit;
 }
-

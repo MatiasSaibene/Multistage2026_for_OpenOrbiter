@@ -561,12 +561,16 @@ void Multistage2026::parseFairing(const std::string &filename) {
 
 	fairing.N = ini.GetLongValue(fairingtxt.c_str(), "N", 0);
 
-	if(fairing.N != 0) {
-		hasFairing = true;
-		oapiWriteLogV("%s: This Rocket Has Fairing", GetName());
-	}
+	if (fairing.N == 0) {
+        hasFairing = false;
+        oapiWriteLogV("%s: No fairing detected (N=0). Skipping.", GetName());
+        return; 
+    }
 
-	fairing.meshname = ini.GetValue(fairingtxt.c_str(), "meshname");
+	hasFairing = true;
+    oapiWriteLogV("%s: This Rocket Has Fairing", GetName());
+
+	fairing.meshname = ini.GetValue(fairingtxt.c_str(), "meshname", "");
 
 	std::string off_vec = ini.GetValue(fairingtxt.c_str(), "off", "0,0,0");
 	fairing.off = CharToVec(off_vec);
@@ -1091,11 +1095,9 @@ void Multistage2026::parseGuidanceFile(const std::string &filename) {
 
     std::replace(safePath.begin(), safePath.end(), '\\', '/');
 
-    oapiWriteLogV("DEBUG: Cargando Guiado desde: %s", safePath.c_str());
-
     std::ifstream gnc_file(safePath);
     if (!gnc_file.is_open()) {
-        oapiWriteLogV("ERROR: No se pudo abrir el archivo de guiado: %s", safePath.c_str());
+        oapiWriteLogV("ERROR: Cannot open guidance file: %s", safePath.c_str());
         return;
 	}
 

@@ -3,6 +3,7 @@
 #include <cstring>
 #include <format>
 #define ORBITER_MODULE
+#define STRICT
 
 //Creation
 MS_Crawler::MS_Crawler(OBJHANDLE hObj, int fmodel) : VESSEL4(hObj, fmodel) {
@@ -329,18 +330,18 @@ void MS_Crawler::clbkSetClassCaps(FILEHANDLE cfg){
     wCustomPadModule = false;
 
     char buffer2[256] = {};
-    oapiReadItem_string(cfg, const_cast<char*>("PAD_MODULE"), buffer);
+    oapiReadItem_string(cfg, const_cast<char*>("PAD_MODULE"), buffer2);
     PadModule = buffer2;
 
     if(!PadModule.empty()){
         wCustomPadModule = true;
     }
 
-    if(PadModule != "NOPAD"){
-        NoPad = true;
-    } else {
-        NoPad = false;
-    }
+    if (PadModule == "NOPAD") {
+    	NoPad = true;
+	} else {
+    	NoPad = false;
+	}
 
 }
 

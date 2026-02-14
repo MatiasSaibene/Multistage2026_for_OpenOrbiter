@@ -9,19 +9,6 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-# --- CONFIGURACIÓN DE ASAN ---
-option(ENABLE_ASAN "Habilitar AddressSanitizer" OFF)
-
-if(ENABLE_ASAN)
-    message(STATUS "AddressSanitizer (ASan) habilitado")
-    # Añadimos las banderas al compilador y al linker
-    add_compile_options(-fsanitize=address -fno-omit-frame-pointer)
-    add_link_options(-fsanitize=address)
-    # Recomendado: -g para tener símbolos de depuración
-    add_compile_options(-g)
-endif()
-# -----------------------------
-
 # Variables de ruta
 set(ORBITER_ROOT "$ENV{HOME}/orbiter_test/Orbiter")
 set(ORBITER_SDK_INCLUDE "${ORBITER_ROOT}/Orbitersdk/include")

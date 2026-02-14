@@ -1,3 +1,4 @@
+#define STRICT
 #include "MS_Camera.hpp"
 #include <format>
 #define ORBITER_MODULE
@@ -23,7 +24,6 @@ MS_Camera::MS_Camera(OBJHANDLE hObj, int fmodel) : VESSEL4(hObj, fmodel){
 }
 
 MS_Camera::~MS_Camera(){
-	oapiReleasePen(penwhite);
 }
 
 void MS_Camera::clbkSetClassCaps(FILEHANDLE cfg) {
@@ -47,15 +47,13 @@ void MS_Camera::clbkSetClassCaps(FILEHANDLE cfg) {
 
 void MS_Camera::clbkLoadStateEx(FILEHANDLE scn, void *vs){
 
-    char * cp_line;
-    std::string line;
+    char *buf = nullptr;
 
-    while(oapiReadScenario_nextline(scn, cp_line)){
-        
-        line = cp_line;
+	while(oapiReadScenario_nextline(scn, buf)){
+    	std::string line(buf);
 
         if(line.rfind("TARGET", 0) == 0){
-            RefVessel = line.substr(6);
+            RefVessel = line.substr(7);
 
             std::string logbuff = std::format("MS_Camera: Target Vessel Loaded->{}", RefVessel);
 
@@ -117,23 +115,15 @@ void MS_Camera::clbkPostStep(double simt, double simdt, double mjd)
 		if (oapiIsVessel(hMS)){
 			v = (VESSEL4*)oapiGetVesselInterface(hMS);
 
-			VECTOR3 rpos, gpos;
+			VECTOR3 rpos;
 			GetRelativePos(hMS, rpos);
-			GetGlobalPos(gpos);
 			Distance = length(rpos);
-			Aperture = 2 * atan2(RefHeight, Distance);
-			if (Aperture <= 0.1 * RAD){
-                Aperture = 0.1 * RAD;
-            }
-			oapiCameraSetAperture(Aperture);
 
-			VECTOR3 rposloc;
-			Global2Local((gpos - rpos), rposloc);
-			normalise(rposloc);
-			Polar = atan2(-rposloc.x, rposloc.z);
-			Azimuth = acos(sqrt(rposloc.x * rposloc.x + rposloc.z * rposloc.z));
+			VECTOR3 dir = rpos / Distance;
+
+			Polar = atan2(dir.x, dir.z);
+			Azimuth = asin(dir.y); 
 			oapiCameraSetCockpitDir(Polar, Azimuth, false);
-			//oapiSetHUDMode(HUD_DOCKING);
 		} else {
             return;
         }
@@ -193,16 +183,16 @@ bool MS_Camera::clbkDrawHUD(int mode, const HUDPAINTSPEC* hps, oapi::Sketchpad* 
 		skp->SetTextColor(0xFFFFFF);
 		int len = 0;
 		if (oapiIsVessel(hMS)){
-			len = sprintf_s(hudbuff, "Altitude	: %03.3f km", v->GetAltitude() / 1000);
+			len = sprintf_s(hudbuff, "Altitude: %03.3f km", v->GetAltitude() / 1000);
 			skp->Text(0.1 * ww, 0.1 * hh, hudbuff, len);
-			len = sprintf_s(hudbuff, "Distance	: %03.3f km", Distance / 1000);
+			len = sprintf_s(hudbuff, "Distance: %03.3f km", Distance / 1000);
 			skp->Text(0.1 * ww, 0.1 * hh + 20, hudbuff, len);
-			len = sprintf_s(hudbuff, "Velocity	: %04.0f m/s", v->GetGroundspeed());
+			len = sprintf_s(hudbuff, "Velocity: %04.0f m/s", v->GetGroundspeed());
 			skp->Text(0.1 * ww, 0.1 * hh + 40, hudbuff, len);
 
-			len = sprintf_s(hudbuff, "Polar   : %03.1f", Polar * DEG);
+			len = sprintf_s(hudbuff, "Polar: %03.1f", Polar * DEG);
 			skp->Text(0.1 * ww, 0.1 * hh + 80, hudbuff, len);
-			len = sprintf_s(hudbuff, "Azimuth : %03.1f", Azimuth * DEG);
+			len = sprintf_s(hudbuff, "Azimuth: %03.1f", Azimuth * DEG);
 			skp->Text(0.1 * ww, 0.1 * hh + 100, hudbuff, len);
 			len = sprintf_s(hudbuff, "Aperture: %03.2f", Aperture * DEG);
 			skp->Text(0.1 * ww, 0.1 * hh + 120, hudbuff, len);
@@ -215,3 +205,9 @@ bool MS_Camera::clbkDrawHUD(int mode, const HUDPAINTSPEC* hps, oapi::Sketchpad* 
 	}
 	return true;
 }
+
+//Creation
+DLLCLBK void InitModule(MODULEHANDLE hModule) {}
+DLLCLBK void ExitModule(MODULEHANDLE hModule) {}
+DLLCLBK VESSEL* ovcInit(OBJHANDLE hvessel, int flightmodel) { return new MS_Camera(hvessel, flightmodel); }
+DLLCLBK void ovcExit(VESSEL* vessel) { if (vessel)delete (MS_Camera*)vessel; }
