@@ -184,7 +184,7 @@ void MS_Hangar::clbkSetClassCaps(FILEHANDLE cfg){
     col_white.g=1;
     col_white.r=1;
 
-    PadHangar = CreateAttachment(FALSE,_V(1.3,-10,57.75),_V(0,0,1),_V(0,1,0),"hangar",FALSE);
+    PadHangar = CreateAttachment(false,_V(1.3,-10,57.75),_V(0,0,1),_V(0,1,0),"hangar",false);
 	VECTOR3 dir;
 	dir=_V(-29,51,-183);
 	normalise(dir);
@@ -321,7 +321,7 @@ int MS_Hangar::clbkGeneric(int msgid=0, int prm=0, void* context = nullptr){
 	if(msgid==VMSG_USER){
 		if(prm==1){
 			
-			DWORD* idx=(DWORD*)(context);
+			int* idx=(int*)(context);
 			*idx=GetAttachmentIndex(PadHangar);
 			
 			return 1;

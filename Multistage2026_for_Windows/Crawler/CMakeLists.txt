@@ -1,53 +1,56 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.16)
 
-# Establecer políticas
-cmake_policy(SET CMP0081 NEW)
+project(MS_Crawler LANGUAGES CXX)  # ← cambiar nombre según módulo
 
-# Nombre del proyecto
-project(MS_Crawler LANGUAGES CXX)
-
-# Configuración de las opciones de compilación para Debug y Release
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
+# ----------- ORBITER ROOT -----------
+if(WIN32)
+  if(NOT DEFINED ENV{ORBITER_ROOT})
+    message(FATAL_ERROR "Define ORBITER_ROOT en el entorno")
+  endif()
+  set(ORBITER_ROOT $ENV{ORBITER_ROOT})
+else()
+  set(ORBITER_ROOT "$ENV{HOME}/orbiter_test/Orbiter")
+endif()
 
-# Variables de ruta
-set(ORBITER_ROOT "C:/Users/Matias_Saibene/Desktop/OpenOrbiter2024")
 set(ORBITER_SDK_INCLUDE "${ORBITER_ROOT}/Orbitersdk/include")
-set(ORBITER_SDK_LIB_RELEASE "${ORBITER_ROOT}/Orbitersdk/lib/*.lib")
-set(ORBITER_SDK_LIB_DEBUG "${ORBITER_ROOT}/Orbitersdk/lib_debug/*.lib")
-set(ORBITER_MODULES "${ORBITER_ROOT}/Modules")
+set(ORBITER_SDK_LIB "${ORBITER_ROOT}/Orbitersdk/lib")
 
+# ----------- LIBRERÍAS -----------
+if(WIN32)
+  file(GLOB ORBITER_LIBS "${ORBITER_SDK_LIB}/*.lib")
+else()
+  file(GLOB ORBITER_LIBS "${ORBITER_SDK_LIB}/*.a")
+endif()
 
-# Archivos fuente y encabezados
+# ----------- SOURCES -----------
 set(SOURCES
-    MS_Crawler.cpp
-)
-set(HEADERS
-    MS_Crawler.hpp
+    MS_Crawler.cpp   # ← cambiar
 )
 
-# Crear el objetivo como una librería compartida (DLL)
-add_library(${PROJECT_NAME} SHARED 
+set(HEADERS
+    MS_Crawler.hpp   # ← cambiar
+)
+
+# ----------- TARGET -----------
+add_library(${PROJECT_NAME} SHARED
     ${SOURCES}
     ${HEADERS}
 )
 
-# Rutas de inclusión
+# ----------- INCLUDE -----------
 target_include_directories(${PROJECT_NAME} PRIVATE
-    "${ORBITER_SDK_INCLUDE}"
-    "${ORBITER_SOURCE}"
+    ${ORBITER_SDK_INCLUDE}
 )
 
-# Enlace a librerías: versiones específicas por configuración
+# ----------- LINK -----------
 target_link_libraries(${PROJECT_NAME}
-    ${ORBITER_SDK_LIB_DEBUG}
+    ${ORBITER_LIBS}
 )
 
-if(MSVC)
-    target_compile_options(${PROJECT_NAME} PRIVATE
-        $<$<CONFIG:Debug>:/MDd>
-        $<$<CONFIG:Release>:/MD>
-    )
+# ----------- WINDOWS FIXES -----------
+if(WIN32)
+  target_compile_definitions(${PROJECT_NAME} PRIVATE _CRT_SECURE_NO_WARNINGS)
 endif()

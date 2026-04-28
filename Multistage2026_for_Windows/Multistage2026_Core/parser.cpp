@@ -6,7 +6,6 @@
 #include <math.h>
 #include <stdio.h>
 #include <sstream>
-#include <winscard.h>
 /*********************************************************************************************
   This file is part of Multistage2015 project
   Copyright belogs to Fred18 for module implementation and its code
@@ -35,7 +34,7 @@ You install and use Multistage2015 at your own risk, author will not be responsi
 // Parser.cpp
 // ==============================================================
 
-void Multistage2026::parseInterstages(const std::string filename, int parsingstage) {
+void Multistage2026::parseInterstages(const std::string &filename, int parsingstage) {
 	
 	oapiWriteLogV("%s: parseInterstages() filename=%s", GetName(), filename.c_str());
 
@@ -50,29 +49,29 @@ void Multistage2026::parseInterstages(const std::string filename, int parsingsta
 
 	std::string intertxt = std::format("SEPARATION_{}{}", parsingstage + 1, parsingstage + 2);
 
-	stage.at(parsingstage).IntIncremental = 0;
+	stage->at(parsingstage).IntIncremental = 0;
 	
 	if(!ini.GetSection(intertxt.c_str())){
 		std::string msg = std::format("No more sections after {}", intertxt);
 		oapiWriteLog(const_cast<char *>(msg.c_str()));
 		return;
 	} else {
-		stage.at(parsingstage).interstage.meshname = ini.GetValue(intertxt.c_str(), "meshname", "");
-		stage.at(parsingstage).wInter = true;
-		stage.at(parsingstage).IntIncremental = ins + 1;
+		stage->at(parsingstage).interstage.meshname = ini.GetValue(intertxt.c_str(), "meshname", "");
+		stage->at(parsingstage).wInter = true;
+		stage->at(parsingstage).IntIncremental = ins + 1;
 		std::string off_vec = ini.GetValue(intertxt.c_str(), "off", "0,0,0");
-		stage.at(parsingstage).interstage.off = CharToVec(off_vec);
-		std::string logvec = std::format("[PARSER] Interstage raw offset loaded: {}, {}, {}", stage.at(parsingstage).interstage.off.x, stage.at(parsingstage).interstage.off.y, stage.at(parsingstage).interstage.off.z);
+		stage->at(parsingstage).interstage.off = CharToVec(off_vec);
+		std::string logvec = std::format("[PARSER] Interstage raw offset loaded: {}, {}, {}", stage->at(parsingstage).interstage.off.x, stage->at(parsingstage).interstage.off.y, stage->at(parsingstage).interstage.off.z);
 		oapiWriteLog(const_cast<char*>(logvec.c_str()));
-		stage.at(parsingstage).interstage.height = std::stof(ini.GetValue(intertxt.c_str(), "height", "0.0"));
-		stage.at(parsingstage).interstage.diameter = std::stof(ini.GetValue(intertxt.c_str(), "diameter", "0.0"));
-		stage.at(parsingstage).interstage.emptymass = std::stof(ini.GetValue(intertxt.c_str(), "emptymass", "0.0"));
-		stage.at(parsingstage).interstage.separation_delay = std::stof(ini.GetValue(intertxt.c_str(), "separation_delay", "0.0"));
-		std::string speed_vec = ini.GetValue(intertxt.c_str(), "speed", "0.0");
-		stage.at(parsingstage).interstage.speed = CharToVec(speed_vec);
+		stage->at(parsingstage).interstage.height = ini.GetDoubleValue(intertxt.c_str(), "height", 0.0);
+		stage->at(parsingstage).interstage.diameter = ini.GetDoubleValue(intertxt.c_str(), "diameter", 0.0);
+		stage->at(parsingstage).interstage.emptymass = ini.GetDoubleValue(intertxt.c_str(), "emptymass", 0.0);
+		stage->at(parsingstage).interstage.separation_delay = ini.GetDoubleValue(intertxt.c_str(), "separation_delay", 0.0);
+		std::string speed_vec = ini.GetValue(intertxt.c_str(), "speed", "0,0,0");
+		stage->at(parsingstage).interstage.speed = CharToVec(speed_vec);
 		std::string rot_speed = ini.GetValue(intertxt.c_str(), "rot_speed", "0,0,0");
-		stage.at(parsingstage).interstage.rot_speed = CharToVec(rot_speed);
-		stage.at(parsingstage).interstage.module = ini.GetValue(intertxt.c_str(), "module", "Stage");
+		stage->at(parsingstage).interstage.rot_speed = CharToVec(rot_speed);
+		stage->at(parsingstage).interstage.module = ini.GetValue(intertxt.c_str(), "module", "Stage");
 
 		ins += 1;
 		nInterstages = ins;
@@ -83,7 +82,7 @@ void Multistage2026::parseInterstages(const std::string filename, int parsingsta
 
 }
 
-void Multistage2026::parseLes(const std::string filename) {
+void Multistage2026::parseLes(const std::string &filename) {
 	
 	oapiWriteLogV("%s: parseLes() filename=%s", GetName(), filename.c_str());
 
@@ -105,9 +104,9 @@ void Multistage2026::parseLes(const std::string filename) {
 		wLes = true;
 		std::string off_vec = ini.GetValue(lestxt.c_str(), "off", "0,0,0");
 		Les.off = CharToVec(off_vec);
-		Les.height = std::stof(ini.GetValue(lestxt.c_str(), "height", "0.0"));
-		Les.diameter = std::stof(ini.GetValue(lestxt.c_str(), "diameter", "0.0"));
-		Les.emptymass = std::stof(ini.GetValue(lestxt.c_str(), "emptymass", "0.0"));
+		Les.height = ini.GetDoubleValue(lestxt.c_str(), "height", 0.0);
+		Les.diameter = ini.GetDoubleValue(lestxt.c_str(), "diameter", 0.0);
+		Les.emptymass = ini.GetDoubleValue(lestxt.c_str(), "emptymass", 0.0);
 		std::string speed_vec = ini.GetValue(lestxt.c_str(), "speed", "0,0,0");
 		Les.speed = CharToVec(speed_vec);
 		std::string rotspeed_vec = ini.GetValue(lestxt.c_str(), "rot_speed", "0,0,0");
@@ -122,7 +121,7 @@ void Multistage2026::parseLes(const std::string filename) {
 	return;
 }
 
-void Multistage2026::parseAdapter(const std::string filename) {
+void Multistage2026::parseAdapter(const std::string &filename) {
 
 	oapiWriteLogV("%s: parseAdapter() filename=%s", GetName(), filename.c_str());
 
@@ -148,15 +147,15 @@ void Multistage2026::parseAdapter(const std::string filename) {
 	Adapter.meshname = meshname;
 
 	Adapter.off = CharToVec(ini.GetValue(intertxt.c_str(), "off", "0,0,0"));
-    Adapter.height = std::stod(ini.GetValue(intertxt.c_str(), "height", "0"));
-    Adapter.diameter = std::stod(ini.GetValue(intertxt.c_str(), "diameter", "0"));
-    Adapter.emptymass = std::stod(ini.GetValue(intertxt.c_str(), "emptymass", "0"));
+	Adapter.height = ini.GetDoubleValue(intertxt.c_str(), "height", 0.0);
+	Adapter.diameter = ini.GetDoubleValue(intertxt.c_str(), "diameter", 0.0);
+    Adapter.emptymass = ini.GetDoubleValue(intertxt.c_str(), "emptymass", 0.0);
 
     oapiWriteLogV("%s: Adapter parsed from section [%s]", GetName(), intertxt.c_str());
 	
 }
 
-void Multistage2026::parseStages(const std::string filename) {
+void Multistage2026::parseStages(const std::string &filename) {
 
 	oapiWriteLogV("%s: parseInterstages() filename=%s", GetName(), filename.c_str());
 
@@ -180,57 +179,57 @@ void Multistage2026::parseStages(const std::string filename) {
 
 		stagetxt = std::format("STAGE_{}", i + 1);
 
-		stage.at(i).meshname = ini.GetValue(stagetxt.c_str(), "meshname", "");
+		stage->at(i).meshname = ini.GetValue(stagetxt.c_str(), "meshname", "");
 
 		std::string off_vec = ini.GetValue(stagetxt.c_str(), "off", "0,0,0");
-		stage.at(i).off = CharToVec(off_vec);
+		stage->at(i).off = CharToVec(off_vec);
 
-		stage.at(i).height = std::stof(ini.GetValue(stagetxt.c_str(), "height", "0.0"));
+		stage->at(i).height = ini.GetDoubleValue(stagetxt.c_str(), "height", 0.0);
 
-		stage.at(i).diameter = std::stof(ini.GetValue(stagetxt.c_str(), "diameter", "0.0"));
+		stage->at(i).diameter = ini.GetDoubleValue(stagetxt.c_str(), "diameter", 0.0);
 
-		stage.at(i).thrust = std::stof(ini.GetValue(stagetxt.c_str(), "thrust", "0.0"));
+		stage->at(i).thrust = ini.GetDoubleValue(stagetxt.c_str(), "thrust", 0.0);
 
-		stage.at(i).emptymass = std::stof(ini.GetValue(stagetxt.c_str(), "emptymass", "0.0"));
+		stage->at(i).emptymass = ini.GetDoubleValue(stagetxt.c_str(), "emptymass", 0.0);
 
-		stage.at(i).fuelmass = std::stof(ini.GetValue(stagetxt.c_str(), "fuelmass", "0.0"));
+		stage->at(i).fuelmass = ini.GetDoubleValue(stagetxt.c_str(), "fuelmass", 0.0);
 
-		stage.at(i).burntime = std::stof(ini.GetValue(stagetxt.c_str(), "burntime", "0.0"));
+		stage->at(i).burntime = ini.GetDoubleValue(stagetxt.c_str(), "burntime", 0.0);
 
-		stage.at(i).ignite_delay = std::stof(ini.GetValue(stagetxt.c_str(), "ignite_delay", "0.0"));
-		stage.at(i).currDelay = std::stof(ini.GetValue(stagetxt.c_str(), "ignite_delay", "0.0"));
+		stage->at(i).ignite_delay = ini.GetDoubleValue(stagetxt.c_str(), "ignite_delay", 0.0);
+		stage->at(i).currDelay = ini.GetDoubleValue(stagetxt.c_str(), "ignite_delay", 0.0);
 
 		std::string speed_vec = ini.GetValue(stagetxt.c_str(), "speed", "0,0,0");
-		stage.at(i).speed = CharToVec(speed_vec);
+		stage->at(i).speed = CharToVec(speed_vec);
 
 		std::string rotspeed_vec = ini.GetValue(stagetxt.c_str(), "rot_speed", "0,0,0");
-		stage.at(i).rot_speed = CharToVec(rotspeed_vec);
+		stage->at(i).rot_speed = CharToVec(rotspeed_vec);
 
-		stage.at(i).module = ini.GetValue(stagetxt.c_str(), "module", "Stage");
+		stage->at(i).module = ini.GetValue(stagetxt.c_str(), "module", "Stage");
 
 		//added by rcraig42 to get values for ispref and pref----------------------------------------------------------------	
 
 
-		stage.at(i).ispref = std::stof(ini.GetValue(stagetxt.c_str(), "isp_sl", "0.0"));
+		stage->at(i).ispref = ini.GetDoubleValue(stagetxt.c_str(), "isp_sl", 0.0);
 
-		stage.at(i).pref = std::stof(ini.GetValue(stagetxt.c_str(), "pressure_sl", "0.0"));
+		stage->at(i).pref = ini.GetDoubleValue(stagetxt.c_str(), "pressure_sl", 0.0);
 
 		//--------------------------------------------------------------------------------------------------------------	
 
 
-		stage.at(i).pitchthrust = 2 * std::stof(ini.GetValue(stagetxt.c_str(), "pitchthrust", "0.0"));
+		stage->at(i).pitchthrust = 2 * ini.GetDoubleValue(stagetxt.c_str(), "pitchthrust", 0.0);
 
-		if(stage.at(i).pitchthrust == 0) {stage.at(i).defpitch = true;}
+		if(stage->at(i).pitchthrust == 0) {stage->at(i).defpitch = true;}
 
-		stage.at(i).yawthrust = 2 * std::stof(ini.GetValue(stagetxt.c_str(), "yawthrust", "0.0"));
-		if(stage.at(i).yawthrust == 0) {stage.at(i).defyaw = true;}
+		stage->at(i).yawthrust = 2 * ini.GetDoubleValue(stagetxt.c_str(), "yawthrust", 0.0);
+		if(stage->at(i).yawthrust == 0) {stage->at(i).defyaw = true;}
 
-		stage.at(i).rollthrust = 2 * std::stof(ini.GetValue(stagetxt.c_str(), "rollthrust", "0.0"));
-		if(stage.at(i).rollthrust == 0) {stage.at(i).defroll = true;}
+		stage->at(i).rollthrust = 2 * ini.GetDoubleValue(stagetxt.c_str(), "rollthrust", 0.0);
+		if(stage->at(i).rollthrust == 0) {stage->at(i).defroll = true;}
 
-		stage.at(i).linearthrust = std::stof(ini.GetValue(stagetxt.c_str(), "linearthrust", "0.0"));
+		stage->at(i).linearthrust = ini.GetDoubleValue(stagetxt.c_str(), "linearthrust", 0.0);
 
-		stage.at(i).linearisp = std::stof(ini.GetValue(stagetxt.c_str(), "linearisp", "0.0"));
+		stage->at(i).linearisp = ini.GetDoubleValue(stagetxt.c_str(), "linearisp", 0.0);
 
 		//engines///
 		int neng;
@@ -243,131 +242,130 @@ void Multistage2026::parseStages(const std::string filename) {
 				break;
 			}
 
-			stage.at(i).engV4.at(neng) = CharToVec4(value);
+			stage->at(i).engV4.at(neng) = CharToVec4(value);
 
-			stage.at(i).eng.at(neng).x = stage.at(i).engV4.at(neng).x;
-			stage.at(i).eng.at(neng).y = stage.at(i).engV4.at(neng).y;
-			stage.at(i).eng.at(neng).z = stage.at(i).engV4.at(neng).z;
-			if ((stage.at(i).engV4.at(neng).t <= 0) || (stage.at(i).engV4.at(neng).t > 10)) { stage.at(i).engV4.at(neng).t = 1; }
+			stage->at(i).eng.at(neng).x = stage->at(i).engV4.at(neng).x;
+			stage->at(i).eng.at(neng).y = stage->at(i).engV4.at(neng).y;
+			stage->at(i).eng.at(neng).z = stage->at(i).engV4.at(neng).z;
+			if ((stage->at(i).engV4.at(neng).t <= 0) || (stage->at(i).engV4.at(neng).t > 10)) { stage->at(i).engV4.at(neng).t = 1; }
 
-			stage.at(i).nEngines = neng + 1;
+			stage->at(i).nEngines = neng + 1;
 
 		}
 
-		stage.at(i).eng_diameter = std::stof(ini.GetValue(stagetxt.c_str(), "eng_diameter", "0"));
-		if(stage.at(i).eng_diameter == 0){
-			stage.at(i).eng_diameter = 0.5 * stage.at(i).diameter;
+		stage->at(i).eng_diameter = ini.GetDoubleValue(stagetxt.c_str(), "eng_diameter", 0.0);
+		if(stage->at(i).eng_diameter == 0){
+			stage->at(i).eng_diameter = 0.5 * stage->at(i).diameter;
 		}
 
 		std::string engdir_vec = ini.GetValue(stagetxt.c_str(), "eng_dir", "0,0,0");
 		if(engdir_vec.empty()){
-			stage.at(i).eng_dir = _V(0, 0, 1);
+			stage->at(i).eng_dir = _V(0, 0, 1);
 		} else {
-			stage.at(i).eng_dir = CharToVec(engdir_vec);
+			stage->at(i).eng_dir = CharToVec(engdir_vec);
 		}
 
 
-		stage.at(i).eng_tex = ini.GetValue(stagetxt.c_str(), "eng_tex", "");
+		stage->at(i).eng_tex = ini.GetValue(stagetxt.c_str(), "eng_tex", "");
 
-		stage.at(i).eng_pstream1 = ini.GetValue(stagetxt.c_str(), "eng_pstream1", "");
-		if(stage.at(i).eng_pstream1.empty()){
-			stage.at(i).wps1 = false;
+		stage->at(i).eng_pstream1 = ini.GetValue(stagetxt.c_str(), "eng_pstream1", "");
+		if(stage->at(i).eng_pstream1.empty()){
+			stage->at(i).wps1 = false;
 		} else {
-			stage.at(i).wps1 = true;
+			stage->at(i).wps1 = true;
 		}
 
-		stage.at(i).eng_pstream2 = ini.GetValue(stagetxt.c_str(), "eng_pstream2", "");
-		if(stage.at(i).eng_pstream2.empty()){
-			stage.at(i).wps2 = false;
+		stage->at(i).eng_pstream2 = ini.GetValue(stagetxt.c_str(), "eng_pstream2", "");
+		if(stage->at(i).eng_pstream2.empty()){
+			stage->at(i).wps2 = false;
 		} else {
-			stage.at(i).wps2 = true;
+			stage->at(i).wps2 = true;
 		}
 
 
-		stage.at(i).ParticlesPackedToEngine = std::stoi(ini.GetValue(stagetxt.c_str(), "particles_packed_to_engine", "0"));
-		if(stage.at(i).ParticlesPackedToEngine != 0){
-			stage.at(1).ParticlesPacked = true;
+		stage->at(i).ParticlesPackedToEngine = ini.GetLongValue(stagetxt.c_str(), "particles_packed_to_engine", 0);
+		if(stage->at(i).ParticlesPackedToEngine != 0){
+			stage->at(1).ParticlesPacked = true;
 
-			oapiWriteLogV("%s: Particles Packed to Engine %i", GetName(), std::abs(stage.at(i).ParticlesPackedToEngine));
+			oapiWriteLogV("%s: Particles Packed to Engine %i", GetName(), std::abs(stage->at(i).ParticlesPackedToEngine));
 		}
 
 
-		int transfer = std::stoi(ini.GetValue(stagetxt.c_str(), "reignitable", "0"));
+		int transfer = ini.GetLongValue(stagetxt.c_str(), "reignitable", 0);
 		if(transfer == 0){
-			stage.at(i).reignitable = false;
+			stage->at(i).reignitable = false;
 		} else {
-			stage.at(i).reignitable = true;
+			stage->at(i).reignitable = true;
 		}
 
-		int tboil = std::stoi(ini.GetValue(stagetxt.
-		c_str(), "boiloff", "0"));
+		int tboil = ini.GetLongValue(stagetxt.c_str(), "boiloff", 0);
 
 		if(tboil == 0){
-			stage.at(i).wBoiloff = false;
+			stage->at(i).wBoiloff = false;
 		} else {
-			stage.at(i).wBoiloff = true;
+			stage->at(i).wBoiloff = true;
 		}
 
 
-		int battery = std::stoi(ini.GetValue(stagetxt.c_str(), "battery", "0"));
+		int battery = ini.GetLongValue(stagetxt.c_str(), "battery", 0);
 		if(battery == 0){
-			stage.at(i).batteries.MaxCharge = 12 * 3600;
-			stage.at(i).batteries.wBatts = false;
-			stage.at(i).batteries.CurrentCharge = stage.at(i).batteries.MaxCharge;
+			stage->at(i).batteries.MaxCharge = 12 * 3600;
+			stage->at(i).batteries.wBatts = false;
+			stage->at(i).batteries.CurrentCharge = stage->at(i).batteries.MaxCharge;
 		} else {
-			stage.at(i).batteries.MaxCharge = 3600 * battery;
-			stage.at(i).batteries.wBatts = true;
-			stage.at(i).batteries.CurrentCharge = stage.at(i).batteries.MaxCharge;
+			stage->at(i).batteries.MaxCharge = 3600 * battery;
+			stage->at(i).batteries.wBatts = true;
+			stage->at(i).batteries.CurrentCharge = stage->at(i).batteries.MaxCharge;
 		}
 
 
-		stage.at(i).ullage.thrust = std::stof(ini.GetValue(stagetxt.c_str(), "ullage_thrust", "0.0"));
-		if(stage.at(i).ullage.thrust == 0){
-			stage.at(i).ullage.wUllage = false;
+		stage->at(i).ullage.thrust = ini.GetDoubleValue(stagetxt.c_str(), "ullage_thrust", 0.0);
+		if(stage->at(i).ullage.thrust == 0){
+			stage->at(i).ullage.wUllage = false;
 		} else {
-			stage.at(i).ullage.wUllage = true;
+			stage->at(i).ullage.wUllage = true;
 		}
 
-		stage.at(i).ullage.anticipation = std::stof(ini.GetValue(stagetxt.c_str(), "ullage_anticipation", "0.0"));
+		stage->at(i).ullage.anticipation = ini.GetDoubleValue(stagetxt.c_str(), "ullage_anticipation", 0.0);
 
-		stage.at(i).ullage.overlap = std::stof(ini.GetValue(stagetxt.c_str(), "ullage_overlap", "0.0"));
+		stage->at(i).ullage.overlap = ini.GetDoubleValue(stagetxt.c_str(), "ullage_overlap", 0.0);
 
-		stage.at(i).ullage.N = std::stoi(ini.GetValue(stagetxt.c_str(), "ullage_N", "0.0"));
+		stage->at(i).ullage.N = ini.GetLongValue(stagetxt.c_str(), "ullage_N", 0);
 
-		stage.at(i).ullage.angle = std::stof(ini.GetValue(stagetxt.c_str(), "ullage_angle", "0.0"));
+		stage->at(i).ullage.angle = ini.GetDoubleValue(stagetxt.c_str(), "ullage_angle", 0.0);
 
-		stage.at(i).ullage.diameter = std::stof(ini.GetValue(stagetxt.c_str(), "ullage_diameter", "0.0"));
+		stage->at(i).ullage.diameter = ini.GetDoubleValue(stagetxt.c_str(), "ullage_diameter", 0.0);
 
-		stage.at(i).ullage.length = std::stof(ini.GetValue(stagetxt.c_str(), "ullage_length", "0.0"));
+		stage->at(i).ullage.length = ini.GetDoubleValue(stagetxt.c_str(), "ullage_length", 0.0);
 
-		if(stage.at(i).ullage.length == 0){
-			stage.at(i).ullage.length = 10 * stage.at(i).ullage.diameter;
+		if(stage->at(i).ullage.length == 0){
+			stage->at(i).ullage.length = 10 * stage->at(i).ullage.diameter;
 		}
 
-		std::string ullage_dir = ini.GetValue(stagetxt.c_str(), "ullage_dir", "0.0");
-		stage.at(i).ullage.dir = CharToVec(ullage_dir);
+		std::string ullage_dir = ini.GetValue(stagetxt.c_str(), "ullage_dir", "0,0,0");
+		stage->at(i).ullage.dir = CharToVec(ullage_dir);
 
 		std::string ullagepos_dir = ini.GetValue(stagetxt.c_str(), "ullage_pos", "0,0,0");
-		stage.at(i).ullage.pos = CharToVec(ullagepos_dir);
+		stage->at(i).ullage.pos = CharToVec(ullagepos_dir);
 
-		stage.at(i).ullage.tex = ini.GetValue(stagetxt.c_str(), "ullage_tex", "");
+		stage->at(i).ullage.tex = ini.GetValue(stagetxt.c_str(), "ullage_tex", "");
 
-		stage.at(i).ullage.rectfactor = std::stof(ini.GetValue(stagetxt.c_str(), "ullage_rectfactor", "0.0"));
+		stage->at(i).ullage.rectfactor = ini.GetDoubleValue(stagetxt.c_str(), "ullage_rectfactor", 0.0);
 
-		if(stage.at(i).ullage.rectfactor == 0){ stage.at(i).ullage.rectfactor = 1;}
+		if(stage->at(i).ullage.rectfactor == 0){ stage->at(i).ullage.rectfactor = 1;}
 
 
 		std::string expbolts_pos_vec = ini.GetValue(stagetxt.c_str(), "expbolts_pos", "0,0,0");
 		if(expbolts_pos_vec.empty()){
-			stage.at(i).expbolt.wExpbolt = false;
+			stage->at(i).expbolt.wExpbolt = false;
 		} else {
-			stage.at(i).expbolt.wExpbolt = true;
-			stage.at(i).expbolt.pos = CharToVec(expbolts_pos_vec);
-			stage.at(i).expbolt.pstream = ini.GetValue(stagetxt.c_str(), "expbolts_pstream", "");
-			stage.at(i).expbolt.dir = _V(0, 0, 1);
-			stage.at(i).expbolt.anticipation = std::stof(ini.GetValue(stagetxt.c_str(), "expbolts_anticipation", "0.0"));
-			if(stage.at(i).expbolt.anticipation == 0){
-				stage.at(i).expbolt.anticipation = 1;
+			stage->at(i).expbolt.wExpbolt = true;
+			stage->at(i).expbolt.pos = CharToVec(expbolts_pos_vec);
+			stage->at(i).expbolt.pstream = ini.GetValue(stagetxt.c_str(), "expbolts_pstream", "");
+			stage->at(i).expbolt.dir = _V(0, 0, 1);
+			stage->at(i).expbolt.anticipation = ini.GetDoubleValue(stagetxt.c_str(), "expbolts_anticipation", 0.0);
+			if(stage->at(i).expbolt.anticipation == 0){
+				stage->at(i).expbolt.anticipation = 1;
 			}
 		}
 
@@ -380,7 +378,7 @@ void Multistage2026::parseStages(const std::string filename) {
 }
 
 
-void Multistage2026::parseBoosters(const std::string filename) {
+void Multistage2026::parseBoosters(const std::string &filename) {
 
 	oapiWriteLogV("%s: parseBoosters() filename=%s", GetName(), filename.c_str());
 
@@ -415,93 +413,93 @@ void Multistage2026::parseBoosters(const std::string filename) {
 			break;
 		}
 
-		booster.at(b).N = std::stoi(ini.GetValue(boostertxt.c_str(), "N", 0));
+		booster->at(b).N = ini.GetLongValue(boostertxt.c_str(), "N", 0);
 
-		booster.at(b).meshname = ini.GetValue(boostertxt.c_str(), "meshname", "");
-		if(booster.at(b).meshname.empty()){
+		booster->at(b).meshname = ini.GetValue(boostertxt.c_str(), "meshname", "");
+		if(booster->at(b).meshname.empty()){
 			oapiWriteLogV("Booster %s meshname not defined", boostertxt.c_str());
 		}
 
 		std::string off_vec = ini.GetValue(boostertxt.c_str(), "off", "(0,0,0.001)");
 		
-		booster.at(b).off = CharToVec(off_vec);
+		booster->at(b).off = CharToVec(off_vec);
 
-		booster.at(b).height = std::stof(ini.GetValue(boostertxt.c_str(), "height", "0.0"));
+		booster->at(b).height = ini.GetDoubleValue(boostertxt.c_str(), "height", 0.0);
 
-		booster.at(b).angle = std::stof(ini.GetValue(boostertxt.c_str(), "angle", "0.0"));
+		booster->at(b).angle = ini.GetDoubleValue(boostertxt.c_str(), "angle", 0.0);
 
-		booster.at(b).diameter = std::stof(ini.GetValue(boostertxt.c_str(), "diameter", "0.0"));
+		booster->at(b).diameter = ini.GetDoubleValue(boostertxt.c_str(), "diameter", 0.0);
 
-		booster.at(b).thrust = std::stof(ini.GetValue(boostertxt.c_str(), "thrust", "0.0"));
+		booster->at(b).thrust = ini.GetDoubleValue(boostertxt.c_str(), "thrust", 0.0);
 
-		booster.at(b).emptymass = std::stof(ini.GetValue(boostertxt.c_str(), "emptymass", "0.0"));
+		booster->at(b).emptymass = ini.GetDoubleValue(boostertxt.c_str(), "emptymass", 0.0);
 
 
-		booster.at(b).fuelmass = std::stof(ini.GetValue(boostertxt.c_str(), "fuelmass", "0.0"));
+		booster->at(b).fuelmass = ini.GetDoubleValue(boostertxt.c_str(), "fuelmass", 0.0);
 
-		booster.at(b).burntime = std::stof(ini.GetValue(boostertxt.c_str(), "burntime", "0.0"));
-
-		
-		booster.at(b).burndelay = std::stof(ini.GetValue(boostertxt.c_str(), "burndelay", "0.0"));
+		booster->at(b).burntime = ini.GetDoubleValue(boostertxt.c_str(), "burntime", 0.0);
 
 		
-		booster.at(b).currDelay = booster.at(b).burndelay;
+		booster->at(b).burndelay = ini.GetDoubleValue(boostertxt.c_str(), "burndelay", 0.0);
+
+		
+		booster->at(b).currDelay = booster->at(b).burndelay;
 
 
 		std::string speed_vec = ini.GetValue(boostertxt.c_str(), "speed", "(3,0,0)");
 
-		booster.at(b).speed = CharToVec(speed_vec);
+		booster->at(b).speed = CharToVec(speed_vec);
 
 		std::string rotspeed_vec = ini.GetValue(boostertxt.c_str(), "rot_speed", "(0,-0.1,0)");
 
-		booster.at(b).rot_speed = CharToVec(rotspeed_vec);
+		booster->at(b).rot_speed = CharToVec(rotspeed_vec);
 
 
-		booster.at(b).module = ini.GetValue(boostertxt.c_str(), "module", "Stage");
+		booster->at(b).module = ini.GetValue(boostertxt.c_str(), "module", "Stage");
 
 		//engines///
 		int nbeng;
-		for (nbeng = 0; nbeng < 5; nbeng++) {
+		for (nbeng = 0; nbeng < 4; nbeng++) {
 			std::string key = std::format("ENG_{}", nbeng + 1);
 
 			std::string value = ini.GetValue(boostertxt.c_str(), key.c_str(), "");
 
 			if(value.empty()){
-				booster.at(b).nEngines = nbeng;
+				booster->at(b).nEngines = nbeng;
 				break;
 			}
 
-			booster[b].eng[nbeng] = CharToVec(value);
-    		booster[b].nEngines = nbeng + 1;
+			booster->at(b).eng.at(nbeng) = CharToVec(value);
+    		booster->at(b).nEngines = nbeng + 1;
 		}
 
-		booster.at(b).eng_diameter = std::stof(ini.GetValue(boostertxt.c_str(), "eng_diameter", "0.5"));
+		booster->at(b).eng_diameter = ini.GetDoubleValue(boostertxt.c_str(), "eng_diameter", 0.5);
 
-		booster.at(b).eng_tex = ini.GetValue(boostertxt.c_str(), "eng_tex", "");
+		booster->at(b).eng_tex = ini.GetValue(boostertxt.c_str(), "eng_tex", "");
 		
-		if(booster.at(b).eng_tex.empty()){
+		if(booster->at(b).eng_tex.empty()){
 			oapiWriteLogV("Booster %s eng_tex is not defined", boostertxt.c_str());
 		}
 
 
 		std::string dir_vec = ini.GetValue(boostertxt.c_str(), "eng_dir", "(0, 0, 1)");
 
-		booster.at(b).eng_dir = CharToVec(dir_vec);
+		booster->at(b).eng_dir = CharToVec(dir_vec);
 
-		booster.at(b).eng_pstream1 = ini.GetValue(boostertxt.c_str(), "eng_pstream1", "");
-		if(booster.at(b).eng_pstream1.empty()){
+		booster->at(b).eng_pstream1 = ini.GetValue(boostertxt.c_str(), "eng_pstream1", "");
+		if(booster->at(b).eng_pstream1.empty()){
 			oapiWriteLogV("Booster %s eng_pstream1 not defined", boostertxt.c_str());
-			booster.at(b).wps1 = false;
+			booster->at(b).wps1 = false;
 		} else {
-			booster.at(b).wps1 = true;
+			booster->at(b).wps1 = true;
 		}
 
-		booster.at(b).eng_pstream2 = ini.GetValue(boostertxt.c_str(), "eng_pstream2", "");
-		if(booster.at(b).eng_pstream2.empty()){
+		booster->at(b).eng_pstream2 = ini.GetValue(boostertxt.c_str(), "eng_pstream2", "");
+		if(booster->at(b).eng_pstream2.empty()){
 			oapiWriteLogV("Booster %s eng_pstream2 not defined", boostertxt.c_str());
-			booster.at(b).wps2 = false;
+			booster->at(b).wps2 = false;
 		} else {
-			booster.at(b).wps2 = true;
+			booster->at(b).wps2 = true;
 		}
 
 
@@ -510,29 +508,29 @@ void Multistage2026::parseBoosters(const std::string filename) {
 			curvetxt = std::format("CURVE_{}", cc + 1);
 			std::string curve_vec = ini.GetValue(boostertxt.c_str(), curvetxt.c_str(), "(9000000,100,0)");
 
-			booster.at(b).curve.at(cc) = CharToVec(curve_vec);
+			booster->at(b).curve.at(cc) = CharToVec(curve_vec);
 
-			booster.at(b).curve.at(cc).z = 0;
+			booster->at(b).curve.at(cc).z = 0;
 
 		}
 
 		std::string expbolts_pos_vec = ini.GetValue(boostertxt.c_str(), "expbolts_pos", "0,0,0");
 		if(expbolts_pos_vec.empty()){
-			booster.at(b).expbolt.wExpbolt = false;
+			booster->at(b).expbolt.wExpbolt = false;
 		} else {
-			booster.at(b).expbolt.wExpbolt = true;
-			booster.at(b).expbolt.pos = CharToVec(expbolts_pos_vec);
-			booster.at(b).expbolt.pstream = ini.GetValue(boostertxt.c_str(), "expbolts_pstream", "");
-			booster.at(b).expbolt.dir = _V(0, 0, 1);
-			std::string expbolts_anticipation = ini.GetValue(boostertxt.c_str(), "expbolts_anticipation", "0.0");
-			if(expbolts_anticipation.empty()){
-				booster.at(b).expbolt.anticipation = 1;
+			booster->at(b).expbolt.wExpbolt = true;
+			booster->at(b).expbolt.pos = CharToVec(expbolts_pos_vec);
+			booster->at(b).expbolt.pstream = ini.GetValue(boostertxt.c_str(), "expbolts_pstream", "");
+			booster->at(b).expbolt.dir = _V(0, 0, 1);
+			double expbolts_anticipation = ini.GetDoubleValue(boostertxt.c_str(), "expbolts_anticipation", 0.0);
+			if(expbolts_anticipation == 0.0){
+				booster->at(b).expbolt.anticipation = 1;
 			} else {
-				booster.at(b).expbolt.anticipation = std::stof(expbolts_anticipation);
+				booster->at(b).expbolt.anticipation = expbolts_anticipation;
 			}
 		}
 
-		if (booster.at(b).meshname.empty()) {
+		if (booster->at(b).meshname.empty()) {
 			nBoosters = b;
 			logbuff = std::format("{}: Number of boosters group in the ini file: {}", GetName(), nBoosters);
 			oapiWriteLog(const_cast<char *>(logbuff.c_str()));
@@ -543,7 +541,7 @@ void Multistage2026::parseBoosters(const std::string filename) {
 	oapiWriteLogV("CONTEO FINAL: nBoosters detectados = %i", nBoosters);
 }
 
-void Multistage2026::parseFairing(const std::string filename) {
+void Multistage2026::parseFairing(const std::string &filename) {
 
 	oapiWriteLogV("%s: parseFairing() filename=%s", GetName(), filename.c_str());
 
@@ -561,25 +559,29 @@ void Multistage2026::parseFairing(const std::string filename) {
 
 	fairingtxt = "FAIRING";
 
-	fairing.N = std::stoi(ini.GetValue(fairingtxt.c_str(), "N", "0"));
+	fairing.N = ini.GetLongValue(fairingtxt.c_str(), "N", 0);
 
-	if(fairing.N != 0) {
-		hasFairing = true;
-		oapiWriteLogV("%s: This Rocket Has Fairing", GetName());
-	}
+	if (fairing.N == 0) {
+        hasFairing = false;
+        oapiWriteLogV("%s: No fairing detected (N=0). Skipping.", GetName());
+        return; 
+    }
 
-	fairing.meshname = ini.GetValue(fairingtxt.c_str(), "meshname");
+	hasFairing = true;
+    oapiWriteLogV("%s: This Rocket Has Fairing", GetName());
+
+	fairing.meshname = ini.GetValue(fairingtxt.c_str(), "meshname", "");
 
 	std::string off_vec = ini.GetValue(fairingtxt.c_str(), "off", "0,0,0");
 	fairing.off = CharToVec(off_vec);
 
-	fairing.height = std::stof(ini.GetValue(fairingtxt.c_str(), "height", "0.0"));
+	fairing.height = ini.GetDoubleValue(fairingtxt.c_str(), "height", 0.0);
 
-	fairing.angle = std::stof(ini.GetValue(fairingtxt.c_str(), "angle", "0.0"));
+	fairing.angle = ini.GetDoubleValue(fairingtxt.c_str(), "angle", 0.0);
 
-	fairing.diameter = std::stof(ini.GetValue(fairingtxt.c_str(), "diameter", "0.0"));
+	fairing.diameter = ini.GetDoubleValue(fairingtxt.c_str(), "diameter", 0.0);
 
-	fairing.emptymass = std::stof(ini.GetValue(fairingtxt.c_str(), "emptymass", "0.0"));
+	fairing.emptymass = ini.GetDoubleValue(fairingtxt.c_str(), "emptymass", 0.0);
 
 	std::string speed_vec = ini.GetValue(fairingtxt.c_str(), "speed", "0,0,0");
 
@@ -600,24 +602,33 @@ void Multistage2026::parseFairing(const std::string filename) {
 void Multistage2026::ArrangePayloadMeshes(const std::string &data, int pnl) {
     if (pnl < 0 || pnl >= 10) return;
 
+    auto& p = payload->at(pnl);
+
+    p.meshname0.clear();
+    p.meshname1.clear();
+    p.meshname2.clear();
+    p.meshname3.clear();
+    p.meshname4.clear();
+
+    static std::string token;
     std::stringstream ss(data);
-    std::string token;
     int idx = 0;
 
-    auto& p = payload.at(pnl);
-
-    std::string* meshNames[5] = { &p.meshname0, &p.meshname1, &p.meshname2, &p.meshname3, &p.meshname4 };
-
-    for(int i = 0; i < 5; i++) *(meshNames[i]) = "";
-
     while (std::getline(ss, token, ';') && idx < 5) {
-        token.erase(0, token.find_first_not_of(" \t\r\n"));
-        token.erase(token.find_last_not_of(" \t\r\n") + 1);
+        size_t first = token.find_first_not_of(" \t\r\n");
+        if (first != std::string::npos) {
+            size_t last = token.find_last_not_of(" \t\r\n");
+            std::string clean = token.substr(first, (last - first + 1));
 
-        if (!token.empty()) {
-            *(meshNames[idx]) = token;
+            if (idx == 0) p.meshname0 = clean;
+            else if (idx == 1) p.meshname1 = clean;
+            else if (idx == 2) p.meshname2 = clean;
+            else if (idx == 3) p.meshname3 = clean;
+            else if (idx == 4) p.meshname4 = clean;
+            
             idx++;
         }
+        token.clear();
     }
 
     p.nMeshes = idx;
@@ -627,23 +638,22 @@ void Multistage2026::ArrangePayloadOffsets(const std::string &data, int pnl) {
     if (pnl < 0 || pnl >= 10) return;
 
     std::stringstream ss(data);
-    std::string token;
+    static std::string token; 
     int idx = 0;
 
-    const int maxIdx = 5; 
-
-    while (std::getline(ss, token, ';') && idx < maxIdx) {
-        token.erase(0, token.find_first_not_of(" \t\r\n"));
-        token.erase(token.find_last_not_of(" \t\r\n") + 1);
-
-        if (token.empty()) continue;
-
-        payload.at(pnl).off.at(idx) = CharToVec(token);
+    while (std::getline(ss, token, ';') && idx < 5) {
+        if (token.length() > 2) {
+            token.erase(0, token.find_first_not_of(" \t\r\n"));
+            token.erase(token.find_last_not_of(" \t\r\n") + 1);
+            
+            payload->at(pnl).off.at(idx) = CharToVec(token);
+        }
         idx++;
+        token.clear();
     }
 }
 
-void Multistage2026::parsePayload(const std::string filename) {
+void Multistage2026::parsePayload(const std::string &filename) {
     oapiWriteLogV("%s: parsePayload() filename=%s", GetName(), filename.c_str());
 
     CSimpleIniA ini(true, false, false);
@@ -666,51 +676,51 @@ void Multistage2026::parsePayload(const std::string filename) {
             break;
         }
 
-        payload.at(pnl).meshname = meshlist;
+        payload->at(pnl).meshname = meshlist;
 
         ArrangePayloadMeshes(meshlist, pnl);
 
-        // 5. Procesamos los offsets
-        // Ahora que ArrangePayloadMeshes ya definió cuántas mallas hay, 
-        // ArrangePayloadOffsets llenará el array 'off' correctamente.
-        std::string off_vec = ini.GetValue(payloadtxt.c_str(), "off", "0,0,0");
-        ArrangePayloadOffsets(off_vec, pnl);
+		const char* raw_off = ini.GetValue(payloadtxt.c_str(), "off", "0,0,0");
 
-		payload.at(pnl).height = std::stof(ini.GetValue(payloadtxt.c_str(), "height", "0.0"));
+		std::string off_vec(raw_off ? raw_off : "0,0,0");
 
-		payload.at(pnl).diameter = std::stof(ini.GetValue(payloadtxt.c_str(), "diameter", "0.0"));
+		ArrangePayloadOffsets(off_vec, pnl);
 
-		payload.at(pnl).mass = std::stof(ini.GetValue(payloadtxt.c_str(), "mass", "0.0"));
+		payload->at(pnl).height = ini.GetDoubleValue(payloadtxt.c_str(), "height", 0.0);
 
-		payload.at(pnl).module = ini.GetValue(payloadtxt.c_str(), "module", "Stage");
+		payload->at(pnl).diameter = ini.GetDoubleValue(payloadtxt.c_str(), "diameter", 0.0);
 
-		payload.at(pnl).name = ini.GetValue(payloadtxt.c_str(), "name", "");
+		payload->at(pnl).mass = ini.GetDoubleValue(payloadtxt.c_str(), "mass", 0.0);
+
+		payload->at(pnl).module = ini.GetValue(payloadtxt.c_str(), "module", "Stage");
+
+		payload->at(pnl).name = ini.GetValue(payloadtxt.c_str(), "name", "");
 
 		std::string speed_vec = ini.GetValue(payloadtxt.c_str(), "speed", "0,0,0");
-		payload.at(pnl).speed = CharToVec(speed_vec);
+		payload->at(pnl).speed = CharToVec(speed_vec);
 
 		std::string rotspeed_vec = ini.GetValue(payloadtxt.c_str(), "rot_speed", "0,0,0");
-		payload.at(pnl).rot_speed = CharToVec(rotspeed_vec);
+		payload->at(pnl).rot_speed = CharToVec(rotspeed_vec);
 
 		std::string rotation_vec = ini.GetValue(payloadtxt.c_str(), "rotation", "0,0,0");
-		payload.at(pnl).Rotation = _V(0, 0, 0);
-		payload.at(pnl).rotated = false;
+		payload->at(pnl).Rotation = _V(0, 0, 0);
+		payload->at(pnl).rotated = false;
 
-		payload.at(pnl).Rotation = operator*(CharToVec(rotation_vec), RAD);
+		payload->at(pnl).Rotation = operator*(CharToVec(rotation_vec), RAD);
 
-		if(length(payload.at(pnl).Rotation) > 0) {payload.at(pnl).rotated = true;}
+		if(length(payload->at(pnl).Rotation) > 0) {payload->at(pnl).rotated = true;}
 
 
-		payload.at(pnl).render = std::stoi(ini.GetValue(payloadtxt.c_str(), "render", "0"));
-		if (payload.at(pnl).render != 1) {
-			payload.at(pnl).render = 0;
+		payload->at(pnl).render = ini.GetLongValue(payloadtxt.c_str(), "render", 0);
+		if (payload->at(pnl).render != 1) {
+			payload->at(pnl).render = 0;
 		}
 		
-		int check = std::stoi(ini.GetValue(payloadtxt.c_str(), "live", "0"));
+		int check = ini.GetLongValue(payloadtxt.c_str(), "live", 0);
 		if (check == 1) {
-			payload.at(pnl).live = true;
+			payload->at(pnl).live = true;
 		} else {
-			payload.at(pnl).live = false;
+			payload->at(pnl).live = false;
 		}
 
 	}
@@ -718,7 +728,7 @@ void Multistage2026::parsePayload(const std::string filename) {
 
 }
 
-void Multistage2026::parseParticle(const std::string filename) {
+void Multistage2026::parseParticle(const std::string &filename) {
 
 	oapiWriteLogV("%s: parseParticle() filename=%s", GetName(), filename.c_str());
 
@@ -737,33 +747,31 @@ void Multistage2026::parseParticle(const std::string filename) {
 
 		partxt = std::format("PARTICLESTREAM_{}", npart + 1);
 
-		dataparsed = ini.GetValue(partxt.c_str(), "name", "");
-		if(dataparsed.empty()){
+		const char* name = ini.GetValue(partxt.c_str(), "name", nullptr);
+		if (!name) name = ini.GetValue(partxt.c_str(), "Name", nullptr);
+		if (!name) name = ini.GetValue(partxt.c_str(), "NAME", nullptr);
+
+		if (!name) {
 			nParticles = npart;
 			break;
 		}
-		Particle.at(npart).ParticleName = dataparsed;
 
-		dataparsed = ini.GetValue(partxt.c_str(), "srcsize", "0.0");
-		Particle.at(npart).Pss.srcsize = stof(dataparsed);
+		Particle.at(npart).ParticleName = name;
 
-		dataparsed = ini.GetValue(partxt.c_str(), "srcrate", "0.0");
-		Particle.at(npart).Pss.srcrate = stof(dataparsed);
+		Particle.at(npart).Pss.srcsize = ini.GetDoubleValue(partxt.c_str(), "srcsize", 0.0);
+		
+		Particle.at(npart).Pss.srcrate = ini.GetDoubleValue(partxt.c_str(), "srcrate", 0.0);
+		
+		Particle.at(npart).Pss.v0 = ini.GetDoubleValue(partxt.c_str(), "V0", 0.0);
+		
+		Particle.at(npart).Pss.srcspread = ini.GetDoubleValue(partxt.c_str(), "srcspread", 0.0);
 
-		dataparsed = ini.GetValue(partxt.c_str(), "V0", "0.0");
-		Particle.at(npart).Pss.v0 = stof(dataparsed);
+		Particle.at(npart).Pss.lifetime = ini.GetDoubleValue(partxt.c_str(), "lifetime", 0.0);
 
-		dataparsed = ini.GetValue(partxt.c_str(), "srcspread", "0.0");
-		Particle.at(npart).Pss.srcspread = stof(dataparsed);
+		Particle.at(npart).Pss.growthrate = ini.GetDoubleValue(partxt.c_str(), "growthrate", 0.0);
 
-		dataparsed = ini.GetValue(partxt.c_str(), "lifetime", "0.0");
-		Particle.at(npart).Pss.lifetime = stof(dataparsed);
-
-		dataparsed = ini.GetValue(partxt.c_str(), "growthrate", "0.0");
-		Particle.at(npart).Pss.growthrate = stof(dataparsed);
-
-		dataparsed = ini.GetValue(partxt.c_str(), "atmslowdown", "0.0");
-		Particle.at(npart).Pss.atmslowdown = stof(dataparsed);
+	
+		Particle.at(npart).Pss.atmslowdown = ini.GetDoubleValue(partxt.c_str(), "atmslowdown", 0.0);
 
 		dataparsed = ini.GetValue(partxt.c_str(), "ltype", "");
 		if(dataparsed == "EMISSIVE"){
@@ -791,10 +799,9 @@ void Multistage2026::parseParticle(const std::string filename) {
 			Particle.at(npart).Pss.levelmap = PARTICLESTREAMSPEC::LVL_LIN;
 		}
 
-		dataparsed = ini.GetValue(partxt.c_str(), "lmin", "0.0");
-		Particle.at(npart).Pss.lmin = stof(dataparsed);
-		dataparsed = ini.GetValue(partxt.c_str(), "lmax", "0.0");
-		Particle.at(npart).Pss.lmax = stof(dataparsed);
+		Particle.at(npart).Pss.lmin = ini.GetDoubleValue(partxt.c_str(), "lmin", 0.0);
+		
+		Particle.at(npart).Pss.lmax = ini.GetDoubleValue(partxt.c_str(), "lmax", 0.0);
 		dataparsed = ini.GetValue(partxt.c_str(), "atmsmap", "");
 		if (dataparsed == "ATM_FLAT"){
 			Particle.at(npart).Pss.atmsmap = PARTICLESTREAMSPEC::ATM_FLAT;
@@ -807,10 +814,9 @@ void Multistage2026::parseParticle(const std::string filename) {
 			Particle.at(npart).Pss.atmsmap = PARTICLESTREAMSPEC::ATM_PLIN;
 		}
 
-		dataparsed = ini.GetValue(partxt.c_str(), "amin", "0.0");
-		Particle.at(npart).Pss.amin = stof(dataparsed);
-		dataparsed = ini.GetValue(partxt.c_str(), "amax", "0.0");
-		Particle.at(npart).Pss.amax = stof(dataparsed);
+		Particle.at(npart).Pss.amin = ini.GetDoubleValue(partxt.c_str(), "amin", 0.0);
+		
+		Particle.at(npart).Pss.amax = ini.GetDoubleValue(partxt.c_str(), "amax", 0.0);
 
 		dataparsed = ini.GetValue(partxt.c_str(), "tex", "");
 		if(dataparsed.empty()){
@@ -822,11 +828,9 @@ void Multistage2026::parseParticle(const std::string filename) {
 
 		Particle.at(npart).TexName = dataparsed;
 
-		dataparsed = ini.GetValue(partxt.c_str(), "GrowFactor_size", "0.0");
-		Particle.at(npart).GrowFactor_size = stof(dataparsed);
+		Particle.at(npart).GrowFactor_size = ini.GetDoubleValue(partxt.c_str(), "GrowFactor_size", 0.0);
 
-		dataparsed = ini.GetValue(partxt.c_str(), "GrowFactor_rate", "0.0");
-		Particle.at(npart).GrowFactor_rate = stof(dataparsed);
+		Particle.at(npart).GrowFactor_rate = ini.GetDoubleValue(partxt.c_str(), "GrowFactor_rate", 0.0);
 
 		if((Particle.at(npart).GrowFactor_rate == 0.0) && (Particle.at(npart).GrowFactor_size == 0.0)){
 			Particle.at(npart).Growing = false;
@@ -836,157 +840,207 @@ void Multistage2026::parseParticle(const std::string filename) {
 	}
 }
 
-void Multistage2026::parseFXMach(const std::string filename){
-
-	oapiWriteLogV("%s: parseFXMach() filename=%s", GetName(), filename.c_str());
-
-	CSimpleIniA ini(true, false, false);
-
-	if (ini.LoadFile(filename.c_str()) < 0) {
-        oapiWriteLogV("%s: Failed to load INI configuration file: %s", GetName(), filename.c_str());
-        return;
-    }
-
-	std::string fxmtxt = "FX_MACH";
-
-	FX_Mach.pstream = ini.GetValue(fxmtxt.c_str(), "pstream", "");
-	if(FX_Mach.pstream.empty()){
-		wMach = false;
-	} else {
-		wMach = true;
-	}
-
-	
-	FX_Mach.mach_min = std::stof(ini.GetValue(fxmtxt.c_str(), "mach_min", "0.0"));
-
-	FX_Mach.mach_max = std::stof(ini.GetValue(fxmtxt.c_str(), "mach_max", "0.0"));
-
-	for (int nmach = 0; nmach < 10; nmach++){
-		std::string txtbuff = std::format("off_{}", nmach + 1);
-		
-		std::string fxmachoff_vec = ini.GetValue(fxmtxt.c_str(), txtbuff.c_str(), "0,0,0");
-
-		FX_Mach.off.at(nmach) = CharToVec(fxmachoff_vec);
-		if(fxmachoff_vec.empty()){
-			FX_Mach.nmach = nmach;
-			break;
-		}
-	}
-	
-	std::string fxmachdir_vec = ini.GetValue(fxmtxt.c_str(), "dir", "0,0,0");
-	FX_Mach.dir = CharToVec(fxmachdir_vec);
-	FX_Mach.added = false;
-
-}
-
-void Multistage2026::parseFXVent(const std::string filename)
+void Multistage2026::parseFXMach(const std::string &filename)
 {
-	oapiWriteLogV("%s: parseFXVent() filename=%s", GetName(), filename.c_str());
+    oapiWriteLogV("%s: parseFXMach() filename=%s", GetName(), filename.c_str());
 
-	CSimpleIniA ini(true, false, false);
+    CSimpleIniA ini(true, false, false);
 
-	if (ini.LoadFile(filename.c_str()) < 0) {
+    if (ini.LoadFile(filename.c_str()) < 0) {
         oapiWriteLogV("%s: Failed to load INI configuration file: %s", GetName(), filename.c_str());
         return;
     }
 
-	std::string fxvtxt = "FX_VENT";
-	std::string itemtxt;
-	std::string numtxt;
+    const char* section = "FX_MACH";
 
-	FX_Vent.pstream = ini.GetValue(fxvtxt.c_str(), "pstream", "");
-	if(FX_Vent.pstream.empty()){
-		wVent = false;
-	} else {
-		wVent = true;
-	}
+    // --- pstream ---
+    const char* pstream = ini.GetValue(section, "pstream", nullptr);
+    if (!pstream || std::string(pstream).empty()) {
+        wMach = false;
+        FX_Mach.pstream.clear();
+        return;
+    } else {
+        wMach = true;
+        FX_Mach.pstream = pstream;
+    }
 
+    // --- rangos ---
+    FX_Mach.mach_min = ini.GetDoubleValue(section, "mach_min", 0.0);
+    FX_Mach.mach_max = ini.GetDoubleValue(section, "mach_max", 0.0);
 
-	FX_Vent.nVent = 0;
-	for (int fv = 1; fv <= 10; fv++)
-	{
-		FX_Vent.added.at(fv) = false;
+    FX_Mach.nmach = 0;
 
-		itemtxt = std::format("off_{}", fv);
+    // --- offsets ---
+    for (int i = 0; i < 10; i++)
+    {
+        int idx = i + 1;
+        std::string key = std::format("off_{}", idx);
 
-		std::string off_vec = ini.GetValue(fxvtxt.c_str(), itemtxt.c_str(), "0,0,0");
-		FX_Vent.off.at(fv) = CharToVec(off_vec);
+        const char* raw = ini.GetValue(section, key.c_str(), nullptr);
 
-		itemtxt = std::format("dir_{}", fv);
-		std::string dir_vec = ini.GetValue(fxvtxt.c_str(), itemtxt.c_str(), "0,0,0");
+        // si no existe → terminamos lista
+        if (!raw) {
+            break;
+        }
 
-		if(dir_vec.empty()){
-			FX_Vent.nVent = fv - 1;
-			break;
-		}
-		FX_Vent.dir.at(fv) = CharToVec(dir_vec);
+        FX_Mach.off.at(i) = CharToVec(raw);
+        FX_Mach.nmach++;
+    }
 
-		itemtxt = std::format("time_fin_{}", fv);
-		FX_Vent.time_fin.at(fv) = 0;
+    // --- dirección ---
+    const char* dir_raw = ini.GetValue(section, "dir", nullptr);
+    if (dir_raw) {
+        FX_Mach.dir = CharToVec(dir_raw);
+    } else {
+        FX_Mach.dir = _V(0,0,0);
+    }
 
-		FX_Vent.time_fin.at(fv) = std::stof(ini.GetValue(fxvtxt.c_str(), itemtxt.c_str(), "0.0"));
-	}
+    FX_Mach.added = false;
+
+    oapiWriteLogV("%s: FX_MACH parsed (nmach=%d, pstream=%s)",
+        GetName(),
+        FX_Mach.nmach,
+        FX_Mach.pstream.c_str()
+    );
 }
 
-void Multistage2026::parseFXLaunch(const std::string filename){
+void Multistage2026::parseFXVent(const std::string &filename)
+{
+    oapiWriteLogV("%s: parseFXVent() filename=%s", GetName(), filename.c_str());
 
-	oapiWriteLogV("%s: parseFXLaunch() filename=%s", GetName(), filename.c_str());
+    CSimpleIniA ini(true, false, false);
 
-	CSimpleIniA ini(true, false, false);
-
-	if (ini.LoadFile(filename.c_str()) < 0) {
+    if (ini.LoadFile(filename.c_str()) < 0) {
         oapiWriteLogV("%s: Failed to load INI configuration file: %s", GetName(), filename.c_str());
         return;
     }
-	
-	std::string fxLtxt = "FX_LAUNCH";
 
-	dataparsed = ini.GetValue(fxLtxt.c_str(), "N", "0");
-	FX_Launch.N = stoi(dataparsed);
-	dataparsed = ini.GetValue(fxLtxt.c_str(), "Height", "0.0");
-	FX_Launch.H = stof(dataparsed);
-	dataparsed = ini.GetValue(fxLtxt.c_str(), "Angle", "0.0");
-	FX_Launch.Angle = stof(dataparsed);
-	dataparsed = ini.GetValue(fxLtxt.c_str(), "Distance", "0.0");
-	FX_Launch.Distance = stof(dataparsed);
-	dataparsed = ini.GetValue(fxLtxt.c_str(), "CutoffAltitude", "0.0");
-	FX_Launch.CutoffAltitude = stof(dataparsed);
-	dataparsed = ini.GetValue(fxLtxt.c_str(), "pstream1", "");
-	FX_Launch.Ps1 = dataparsed;
-	dataparsed = ini.GetValue(fxLtxt.c_str(), "pstream2", "");
-	FX_Launch.Ps2 = dataparsed;
+    const char* section = "FX_VENT";
 
-	if(FX_Launch.N >= 1){ 
-		wLaunchFX = true;
-	}
+    // --- pstream ---
+    const char* pstream = ini.GetValue(section, "pstream", nullptr);
+    if (!pstream || std::string(pstream).empty()) {
+        wVent = false;
+        FX_Vent.pstream.clear();
+        return; // si no hay pstream, no tiene sentido seguir
+    } else {
+        wVent = true;
+        FX_Vent.pstream = pstream;
+    }
+
+    FX_Vent.nVent = 0;
+
+    // --- loop vents ---
+    for (int i = 0; i < 10; i++)
+    {
+        int idx = i + 1; // nombres tipo off_1, off_2...
+
+        FX_Vent.added.at(i) = false;
+
+        // -------- OFF --------
+        std::string key_off = std::format("off_{}", idx);
+        const char* off_raw = ini.GetValue(section, key_off.c_str(), nullptr);
+
+        if (off_raw) {
+            FX_Vent.off.at(i) = CharToVec(off_raw);
+        } else {
+            FX_Vent.off.at(i) = _V(0,0,0);
+        }
+
+        // -------- DIR (CRÍTICO) --------
+        std::string key_dir = std::format("dir_{}", idx);
+        const char* dir_raw = ini.GetValue(section, key_dir.c_str(), nullptr);
+
+        // Si no existe dir_N → terminamos lista
+        if (!dir_raw) {
+            break;
+        }
+
+        FX_Vent.dir.at(i) = CharToVec(dir_raw);
+
+        // -------- TIME_FIN --------
+        std::string key_time = std::format("time_fin_{}", idx);
+        FX_Vent.time_fin.at(i) = ini.GetDoubleValue(section, key_time.c_str(), 0.0);
+
+        // contamos este vent como válido
+        FX_Vent.nVent++;
+    }
+
+    oapiWriteLogV("%s: FX_VENT parsed, nVent=%d, pstream=%s",
+        GetName(), FX_Vent.nVent, FX_Vent.pstream.c_str());
+}
+
+void Multistage2026::parseFXLaunch(const std::string &filename)
+{
+    oapiWriteLogV("%s: parseFXLaunch() filename=%s", GetName(), filename.c_str());
+
+    CSimpleIniA ini(true, false, false);
+
+    if (ini.LoadFile(filename.c_str()) < 0) {
+        oapiWriteLogV("%s: Failed to load INI configuration file: %s", GetName(), filename.c_str());
+        return;
+    }
+
+    const char* section = "FX_LAUNCH";
+
+    FX_Launch.N = ini.GetLongValue(section, "N", 0);
+    FX_Launch.H = ini.GetDoubleValue(section, "Height", 0.0);
+    FX_Launch.Angle = ini.GetDoubleValue(section, "Angle", 0.0);
+    FX_Launch.Distance = ini.GetDoubleValue(section, "Distance", 0.0);
+    FX_Launch.CutoffAltitude = ini.GetDoubleValue(section, "CutoffAltitude", 0.0);
+
+    const char* ps1 = ini.GetValue(section, "pstream1", nullptr);
+    const char* ps2 = ini.GetValue(section, "pstream2", nullptr);
+
+    FX_Launch.Ps1 = ps1 ? ps1 : "";
+    FX_Launch.Ps2 = ps2 ? ps2 : "";
+
+    // Validación real
+    if (FX_Launch.N > 0 && !FX_Launch.Ps1.empty()) {
+        wLaunchFX = true;
+    } else {
+        wLaunchFX = false;
+    }
+
+    oapiWriteLogV("%s: FX_LAUNCH parsed (N=%d, Ps1=%s, Ps2=%s)",
+        GetName(),
+        FX_Launch.N,
+        FX_Launch.Ps1.c_str(),
+        FX_Launch.Ps2.c_str()
+    );
 }
 
 
-void Multistage2026::parseTexture(const std::string filename) {
+void Multistage2026::parseTexture(const std::string &filename) {
     CSimpleIniA ini(true, false, false);
     if (ini.LoadFile(filename.c_str()) < 0) return;
 
     nTextures = 0;
     for (int texn = 0; texn < 16; texn++) {
         std::string bufftxt = std::format("TEX_{}", texn + 1);
-        std::string val = ini.GetValue("TEXTURE_LIST", bufftxt.c_str(), "");
+        const char* val = ini.GetValue("TEXTURE_LIST", bufftxt.c_str(), nullptr);
 
-        val.erase(0, val.find_first_not_of(" \t\r\n"));
-        val.erase(val.find_last_not_of(" \t\r\n") + 1);
+        if (!val || strlen(val) == 0) break;
 
-        if (val.empty()) break;
+        std::string name(val);
+        name.erase(0, name.find_first_not_of(" \t\r\n"));
+        name.erase(name.find_last_not_of(" \t\r\n") + 1);
 
-        tex.TextureName.at(texn) = val;
-        tex.hTex.at(texn) = oapiRegisterExhaustTexture(const_cast<char*>(val.c_str()));
+        tex.TextureName.at(texn) = name;
+        
+        tex.hTex.at(texn) = oapiRegisterExhaustTexture((char*)name.c_str());
+        if (!tex.hTex.at(texn)) {
+            tex.hTex.at(texn) = oapiLoadTexture(name.c_str());
+        }
         
         nTextures = texn + 1;
-        oapiWriteLogV("%s: Texture n.%i Loaded: %s (Handle: %p)", 
-            GetName(), nTextures, val.c_str(), tex.hTex.at(texn));
+        oapiWriteLogV("MS2026: Texture %d Loaded: %s (Handle: %p)", 
+            nTextures, name.c_str(), tex.hTex.at(texn));
     }
 }
 
 
-void Multistage2026::parseMisc(const std::string filename){
+void Multistage2026::parseMisc(const std::string &filename){
 
 	oapiWriteLogV("%s: parseMisc() filename=%s", GetName(), filename.c_str());
 
@@ -999,37 +1053,29 @@ void Multistage2026::parseMisc(const std::string filename){
 
 	std::string Misctxt = "MISC";
 
-	dataparsed = ini.GetValue(Misctxt.c_str(), "COG", "0.0");
-	Misc.COG = stof(dataparsed);
-	dataparsed = ini.GetValue(Misctxt.c_str(), "GNC_DEBUG", "0");
-	Misc.GNC_Debug = stoi(dataparsed);
-	dataparsed = ini.GetValue(Misctxt.c_str(), "TELEMETRY", "0");
-	int tval;
-	tval = stoi(dataparsed);
+	Misc.COG = ini.GetDoubleValue(Misctxt.c_str(), "COG", 0.0);
+	Misc.GNC_Debug = ini.GetLongValue(Misctxt.c_str(), "GNC_DEBUG", 0);
+	int tval = ini.GetLongValue(Misctxt.c_str(), "TELEMETRY", 0);
 	if (tval == 1){
 		Misc.telemetry = true;
 	} else {
 		Misc.telemetry = false;
 	}
-	dataparsed = ini.GetValue(Misctxt.c_str(), "FOCUS", "0");
-	Misc.Focus = stoi(dataparsed);
-	dataparsed = ini.GetValue(Misctxt.c_str(), "THRUST_REAL_POS", "0");
-	int trp;
-	trp = stoi(dataparsed);
+	Misc.Focus = ini.GetLongValue(Misctxt.c_str(), "FOCUS", 0);
+	int trp = ini.GetLongValue(Misctxt.c_str(), "THRUST_REAL_POS", 0);
 	if (trp == 1){
 		Misc.thrustrealpos = true; 
 		oapiWriteLogV("%s: Thrust in Real Position", GetName());
 	} else {
 		Misc.thrustrealpos = false;
 	}
-	dataparsed = ini.GetValue(Misctxt.c_str(), "VERTICAL_ANGLE", "0.0");
+	
 	Misc.VerticalAngle = 0;
-	Misc.VerticalAngle = stof(dataparsed) * RAD;
+	Misc.VerticalAngle = (ini.GetDoubleValue(Misctxt.c_str(), "VERTICAL_ANGLE", 0.0) * RAD);
 
 	//added by rcraig42 to retrieve drag_factor from ini --------------------------------------------------------
 
-	dataparsed = ini.GetValue(Misctxt.c_str(), "drag_factor", "0.0");
-	Misc.drag_factor = stof(dataparsed);
+	Misc.drag_factor = ini.GetDoubleValue(Misctxt.c_str(), "drag_factor", 0.0);
 
 	//------------------------------------------------------------------------------------------------------------
 	dataparsed = ini.GetValue(Misctxt.c_str(), "PAD_MODULE", "");
@@ -1043,7 +1089,7 @@ void Multistage2026::parseMisc(const std::string filename){
 }
 
 
-bool Multistage2026::parseinifile(const std::string filename) {
+bool Multistage2026::parseinifile(const std::string &filename) {
 	parseStages(filename);
 	parseBoosters(filename);
 	//parseInterstages(filename);
@@ -1060,7 +1106,7 @@ bool Multistage2026::parseinifile(const std::string filename) {
 	return true;
 }
 
-void Multistage2026::parseTelemetryFile(const std::string filename){
+void Multistage2026::parseTelemetryFile(const std::string &filename){
 	
 	std::filesystem::path filebuff = OrbiterRoot + filename;
 
@@ -1076,14 +1122,14 @@ void Multistage2026::parseTelemetryFile(const std::string filename){
 			if (!line.empty()) {
 				const char* cstr = line.c_str();
 
-				sscanf(cstr, "%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf", &ReftlmAlt.at(loadedtlmlines).x, &ReftlmAlt.at(loadedtlmlines).y, &ReftlmSpeed.at(loadedtlmlines).y, &ReftlmPitch.at(loadedtlmlines).y, &ReftlmThrust.at(loadedtlmlines).y, &ReftlmMass.at(loadedtlmlines).y, &ReftlmVv.at(loadedtlmlines).y, &ReftlmAcc.at(loadedtlmlines).y);
-				if (ReftlmAlt.at(loadedtlmlines).x == 0) { continue; }
-				ReftlmSpeed.at(loadedtlmlines).x = ReftlmAlt.at(loadedtlmlines).x;
-				ReftlmPitch.at(loadedtlmlines).x = ReftlmAlt.at(loadedtlmlines).x;
-				ReftlmThrust.at(loadedtlmlines).x = ReftlmAlt.at(loadedtlmlines).x;
-				ReftlmMass.at(loadedtlmlines).x = ReftlmAlt.at(loadedtlmlines).x;
-				ReftlmVv.at(loadedtlmlines).x = ReftlmAlt.at(loadedtlmlines).x;
-				ReftlmAcc.at(loadedtlmlines).x = ReftlmAlt.at(loadedtlmlines).x;
+				sscanf(cstr, "%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf", &tlm->refAlt.at(loadedtlmlines).x, &tlm->refAlt.at(loadedtlmlines).y, &tlm->refSpeed.at(loadedtlmlines).y, &tlm->refPitch.at(loadedtlmlines).y, &tlm->refThrust.at(loadedtlmlines).y, &tlm->refMass.at(loadedtlmlines).y, &tlm->refVv.at(loadedtlmlines).y, &tlm->refAcc.at(loadedtlmlines).y);
+				if (tlm->refAlt.at(loadedtlmlines).x == 0) { continue; }
+				tlm->refSpeed.at(loadedtlmlines).x = tlm->refAlt.at(loadedtlmlines).x;
+				tlm->refPitch.at(loadedtlmlines).x = tlm->refAlt.at(loadedtlmlines).x;
+				tlm->refThrust.at(loadedtlmlines).x = tlm->refAlt.at(loadedtlmlines).x;
+				tlm->refMass.at(loadedtlmlines).x = tlm->refAlt.at(loadedtlmlines).x;
+				tlm->refVv.at(loadedtlmlines).x = tlm->refAlt.at(loadedtlmlines).x;
+				tlm->refAcc.at(loadedtlmlines).x = tlm->refAlt.at(loadedtlmlines).x;
 
 				loadedtlmlines++;
 			}
@@ -1091,138 +1137,160 @@ void Multistage2026::parseTelemetryFile(const std::string filename){
 	}
 }
 
-void Multistage2026::parseGuidanceFile(const std::string filename) {
-	
-	nsteps = 1;
+void Multistage2026::parseGuidanceFile(const std::string &filename) {
+    std::string safePath = OrbiterRoot;
+    if (!safePath.empty() && safePath.back() != '/' && safePath.back() != '\\') {
+        safePath += "/";
+    }
 
-	std::filesystem::path filebuff = OrbiterRoot + guidancefile;//Config\\multistage\\guidance_shuttle.txt");
-	std::string line;
+    // USAR filename, no guidancefile
+    safePath += filename;
 
-	oapiWriteLogV("%s: Guidance File present: %s", GetName(), guidancefile.c_str());
+    std::replace(safePath.begin(), safePath.end(), '\\', '/');
 
-	std::ifstream gnc_file(filebuff);
+    std::ifstream gnc_file(safePath);
+    if (!gnc_file.is_open()) {
+        oapiWriteLogV("ERROR: Cannot open guidance file: %s", safePath.c_str());
+        return;
+    }
 
-	if (gnc_file.is_open()){
+    nsteps = 0;
+    std::string line;
 
-		while (getline(gnc_file, line)){
-			if (!line.empty()) {
+    while (std::getline(gnc_file, line)) {
 
-				for (int i = 0; i < 6; i++) { Gnc_step.at(nsteps).wValue[i] = FALSE; }
+        // limpiar saltos de línea
+        line.erase(std::remove(line.begin(), line.end(), '\r'), line.end());
+        line.erase(std::remove(line.begin(), line.end(), '\n'), line.end());
 
-				std::size_t findEqual = line.find_first_of("=");
-				if (findEqual != line.npos) {
-					std::string mettime = line.substr(0, findEqual);
+        // TRIM izquierda
+        line.erase(0, line.find_first_not_of(" \t"));
 
-					Gnc_step.at(nsteps).time = atof(&mettime.at(0));
+        if (line.empty() || line[0] == ';') continue;
 
-					std::size_t findLineEnd = line.find_first_of(")");
-					if (findLineEnd != line.npos) {
+        if (nsteps >= Gnc_step.size()) {
+            oapiWriteLogV("WARNING: Guidance file too long! Stopping at step %d", nsteps);
+            break;
+        }
 
-						std::size_t findOpenP = line.find_first_of("(");
-						if (findOpenP != line.npos) {
-							std::string comand = line.substr(findEqual + 1, findOpenP - findEqual - 1);
-							Gnc_step.at(nsteps).Comand = comand;
+        size_t equalPos = line.find('=');
+        if (equalPos == std::string::npos) continue;
 
-							std::string values = line.substr(findOpenP + 1, findLineEnd - findOpenP - 1);
-							Gnc_step.at(nsteps).wValue.at(0) = true;
-							std::size_t findFirstComma = values.find_first_of(",");
-							if (findFirstComma != values.npos) {
-								value1 = values.substr(0, findFirstComma);
-								Gnc_step.at(nsteps).wValue.at(1) = true;
+        auto& currentStep = Gnc_step.at(nsteps);
+
+        // inicializar
+        currentStep.Comand = "";
+        currentStep.time = 0;
+        for (int i = 0; i < 6; i++) currentStep.wValue[i] = false;
+        currentStep.trval1 = currentStep.trval2 = currentStep.trval3 = 0;
+        currentStep.trval4 = currentStep.trval5 = currentStep.trval6 = 0;
+
+        // ----------- PARSE TIEMPO -----------
+        std::string strTime = line.substr(0, equalPos);
+
+        // trim tiempo
+        strTime.erase(0, strTime.find_first_not_of(" \t"));
+        strTime.erase(strTime.find_last_not_of(" \t") + 1);
+
+        try {
+            currentStep.time = std::stod(strTime);
+        } catch (...) {
+            oapiWriteLogV("WARNING: Invalid time value: %s", strTime.c_str());
+            continue; // no contar este step
+        }
+
+        // ----------- PARSE COMANDO -----------
+        std::string cmdPart = line.substr(equalPos + 1);
+
+        // trim
+        cmdPart.erase(0, cmdPart.find_first_not_of(" \t"));
+        cmdPart.erase(cmdPart.find_last_not_of(" \t") + 1);
+
+        size_t openParen = cmdPart.find('(');
+        size_t closeParen = cmdPart.find(')', openParen);
+
+        std::string cmdName;
+        std::string params;
+
+        if (openParen != std::string::npos && closeParen != std::string::npos) {
+            cmdName = cmdPart.substr(0, openParen);
+            params = cmdPart.substr(openParen + 1, closeParen - openParen - 1);
+        } else {
+            // comando sin parámetros (raro pero posible)
+            cmdName = cmdPart;
+        }
+
+        // trim nombre comando
+        cmdName.erase(0, cmdName.find_first_not_of(" \t"));
+        cmdName.erase(cmdName.find_last_not_of(" \t") + 1);
+
+        // normalizar a minúsculas (MUY importante para tu ejemplo)
+        std::transform(cmdName.begin(), cmdName.end(), cmdName.begin(),
+            [](unsigned char c){ return std::tolower(c); });
+
+        currentStep.Comand = cmdName;
+
+        // ----------- PARSE PARÁMETROS -----------
+        if (!params.empty()) {
+            ParseGNCParams(params, currentStep);
+        }
+
+        // ----------- COMANDOS ESPECIALES -----------
+        if (cmdName == "disable") {
+            std::string lowLine = line;
+            std::transform(lowLine.begin(), lowLine.end(), lowLine.begin(),
+                [](unsigned char c){ return std::tolower(c); });
+
+            if (lowLine.find("pitch") != std::string::npos)
+                currentStep.Comand = "disablepitch";
+            else if (lowLine.find("roll") != std::string::npos)
+                currentStep.Comand = "disableroll";
+            else if (lowLine.find("jettison") != std::string::npos)
+                currentStep.Comand = "disablejettison";
+        }
+
+        // DEBUG útil
+        oapiWriteLogV("GNC STEP %d: t=%.2f cmd=%s", nsteps, currentStep.time, currentStep.Comand.c_str());
+
+        nsteps++;
+    }
+
+    VinkaComposeGNCSteps();
+    VinkaRearrangeSteps();
+    nsteps = VinkaCountSteps();
+}
 
 
-								std::size_t findSecondComma = values.find_first_of(",", findFirstComma + 1);
+void Multistage2026::ParseGNCParams(std::string params, GNC_STEP &step) {
+    std::stringstream ss(params);
+    std::string token;
+    int index = 0;
 
-								if (findSecondComma != values.npos) {
+    while (std::getline(ss, token, ',') && index < 6) {
+        // Trim whitespace
+        token.erase(0, token.find_first_not_of(" \t"));
+        token.erase(token.find_last_not_of(" \t") + 1);
 
-									value2 = values.substr(findFirstComma + 1, findSecondComma - findFirstComma - 1);
-									Gnc_step.at(nsteps).wValue.at(2) = true;
+        if (!token.empty()) {
+            try {
+                double value = std::stod(token);
 
-									std::size_t findThirdComma = values.find_first_of(",", findSecondComma + 1);
+                switch (index) {
+                    case 0: step.trval1 = value; break;
+                    case 1: step.trval2 = value; break;
+                    case 2: step.trval3 = value; break;
+                    case 3: step.trval4 = value; break;
+                    case 4: step.trval5 = value; break;
+                    case 5: step.trval6 = value; break;
+                }
 
-									if (findThirdComma != values.npos) {
+                step.wValue[index] = true;
+            } catch (...) {
+                // Si falla la conversión, lo ignoramos pero no rompemos el parser
+                step.wValue[index] = false;
+            }
+        }
 
-										value3 = values.substr(findSecondComma + 1, findThirdComma - findSecondComma - 1);
-										Gnc_step.at(nsteps).wValue.at(3) = true;
-
-										std::size_t findFourthComma = values.find_first_of(",", findThirdComma + 1);
-										if (findFourthComma != values.npos) {
-											value4 = values.substr(findThirdComma + 1, findFourthComma - findThirdComma - 1);
-											Gnc_step.at(nsteps).wValue[4] = true;
-											std::size_t findFifthComma = values.find_first_of(",", findFourthComma + 1);
-											if (findFifthComma != values.npos) {
-												value5 = values.substr(findFourthComma + 1, findFifthComma - findFourthComma - 1);
-												value6 = values.substr(findFifthComma + 1, std::string::npos);
-												Gnc_step.at(nsteps).wValue[5] = true;
-											}
-											else { value5 = values.substr(findFourthComma + 1, std::string::npos); }
-										}
-										else { value4 = values.substr(findThirdComma + 1, values.npos); }
-									}
-									else { value3 = values.substr(findSecondComma + 1, values.npos); }
-								}
-								else { value2 = values.substr(findFirstComma + 1, values.npos); }
-							}
-							else { value1 = values.substr(0, values.npos); }
-						}
-					}
-					if (Gnc_step.at(nsteps).wValue.at(0)) { Gnc_step.at(nsteps).trval1 = atof(&value1.at(0)); }
-					else { Gnc_step.at(nsteps).trval1 = 0; }
-					if (Gnc_step.at(nsteps).wValue.at(1)) { Gnc_step.at(nsteps).trval2 = atof(&value2.at(0)); }
-					else { Gnc_step.at(nsteps).trval2 = 0; }
-					if (Gnc_step.at(nsteps).wValue.at(2)) { Gnc_step.at(nsteps).trval3 = atof(&value3.at(0)); }
-					else { Gnc_step.at(nsteps).trval3 = 0; }
-					if (Gnc_step.at(nsteps).wValue.at(3)) { Gnc_step.at(nsteps).trval4 = atof(&value4.at(0)); }
-					else { Gnc_step.at(nsteps).trval4 = 0; }
-					if (Gnc_step.at(nsteps).wValue[4]) { Gnc_step.at(nsteps).trval5 = atof(&value5.at(0)); }
-					else { Gnc_step.at(nsteps).trval5 = 0; }
-					if (Gnc_step.at(nsteps).wValue[5]) { Gnc_step.at(nsteps).trval6 = atof(&value6.at(0)); }
-					else { Gnc_step.at(nsteps).trval6 = 0; }
-
-				} else {
-					Gnc_step.at(nsteps).Comand = "noline";
-					Gnc_step.at(nsteps).GNC_Comand = CM_NOLINE;
-					Gnc_step.at(nsteps).time_fin = -10000;
-					Gnc_step.at(nsteps).trval1 = 0;
-					Gnc_step.at(nsteps).trval2 = 0;
-					Gnc_step.at(nsteps).trval3 = 0;
-					Gnc_step.at(nsteps).trval4 = 0;
-					Gnc_step.at(nsteps).trval5 = 0;
-					Gnc_step.at(nsteps).trval6 = 0;
-				}
-
-
-				for (int l = 0; l < line.size(); l++) {
-					line[l] = tolower(line[l]);
-				}
-
-				std::size_t foundDisable = line.find("disable");
-
-				if (foundDisable != std::string::npos) {
-					std::size_t foundDisPitch = line.find("pitch");
-					std::size_t foundDisRoll = line.find("roll");
-					std::size_t foundDisJett = line.find("jettison");
-
-					if (foundDisPitch != std::string::npos) {
-						Gnc_step.at(nsteps).Comand = "disablepitch";
-					} else if (foundDisRoll != std::string::npos) {
-						Gnc_step.at(nsteps).Comand = "disableroll";
-					} else if (foundDisJett != std::string::npos) {
-						Gnc_step.at(nsteps).Comand = "disablejettison";
-					}
-
-				}
-				++nsteps;
-			} else {
-				continue;
-			}
-		}
-		nsteps -= 1;
-
-		gnc_file.close();
-	}
-	VinkaComposeGNCSteps();
-	VinkaRearrangeSteps();
-	nsteps = VinkaCountSteps();
-	return;
+        index++;
+    }
 }

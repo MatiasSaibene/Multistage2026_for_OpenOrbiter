@@ -1,7 +1,7 @@
 #include "EmptyModule.hpp"
 #include <array>
 #include <cmath>
-
+#define STRICT
 #define ORBITER_MODULE
 
 //Creation

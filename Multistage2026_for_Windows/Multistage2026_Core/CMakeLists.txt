@@ -1,74 +1,60 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.16)
 
-# Establecer políticas
-cmake_policy(SET CMP0081 NEW)
-
-project(Multistage2026 LANGUAGES CXX)
+project(Multistage2026 LANGUAGES CXX RC)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-# Variables de ruta
-set(ORBITER_ROOT "C:/Users/Matias_Saibene/Desktop/OpenOrbiter2024")
+# ----------- ORBITER ROOT -----------
+if(WIN32)
+  if(NOT DEFINED ENV{ORBITER_ROOT})
+    message(FATAL_ERROR "Define ORBITER_ROOT en el entorno")
+  endif()
+  set(ORBITER_ROOT $ENV{ORBITER_ROOT})
+else()
+  set(ORBITER_ROOT "$ENV{HOME}/orbiter_test/Orbiter")
+endif()
+
 set(ORBITER_SDK_INCLUDE "${ORBITER_ROOT}/Orbitersdk/include")
-#set(ORBITER_SDK_LIB_RELEASE "${ORBITER_ROOT}/Orbitersdk/lib/*.lib")
-#set(ORBITER_SDK_LIB_DEBUG "${ORBITER_ROOT}/Orbitersdk/lib_debug/*.lib")
-set(ORBITER_COMMON_DIR "${ORBITER_ROOT}/Orbitersdk/samples/Common/Dialog")
-set(ORBITER_MODULES "${ORBITER_ROOT}/Modules")
+set(ORBITER_SDK_LIB "${ORBITER_ROOT}/Orbitersdk/lib")
 
-file(GLOB ORBITER_SDK_LIBS "${ORBITER_ROOT}/Orbitersdk/lib_debug/*.lib")
+# ----------- LIBS -----------
+if(WIN32)
+  file(GLOB ORBITER_LIBS "${ORBITER_SDK_LIB}/*.lib")
+else()
+  file(GLOB ORBITER_LIBS "${ORBITER_SDK_LIB}/*.a")
+endif()
 
-# Archivos fuente y encabezados
+# ----------- SOURCES -----------
 set(SOURCES
-    DevDlg.cpp
-    DevModeCtrl.cpp
-    Graph.cpp
     Guidance.cpp
     Multistage2026.cpp
     parser.cpp
     Particles.cpp
     peg.cpp
     WriteIni.cpp
-    Resources.rc    
-    ${ORBITER_COMMON_DIR}/TabDlg.cpp
+    Resources.rc
 )
 
 set(HEADERS
-    DevDlg.hpp
-    DevModeCtrl.hpp
-    Graph.hpp
     Multistage2026.hpp
     resource.h
     WriteIni.hpp
-    ${ORBITER_COMMON_DIR}/TabDlg.h
 )
 
-# Crear el objetivo como una librería compartida (DLL)
-add_library(${PROJECT_NAME} SHARED 
+add_library(${PROJECT_NAME} SHARED
     ${SOURCES}
     ${HEADERS}
 )
 
-# Rutas de inclusión
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${ORBITER_SDK_INCLUDE}
-    ${ORBITER_SOURCE}
-    ${ORBITER_COMMON_DIR}
 )
 
-# Enlace a librerías: versiones específicas por configuración
 target_link_libraries(${PROJECT_NAME}
-   ${ORBITER_SDK_LIBS}
-    uxtheme.lib
-    comctl32.lib
-    user32.lib
-    gdi32.lib
+    ${ORBITER_LIBS}
 )
 
-if(MSVC)
-    target_compile_options(${PROJECT_NAME} PRIVATE
-        $<$<CONFIG:Debug>:/MDd>
-        $<$<CONFIG:Release>:/MD>
-    )
+if(WIN32)
+  target_compile_definitions(${PROJECT_NAME} PRIVATE _CRT_SECURE_NO_WARNINGS)
 endif()

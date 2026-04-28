@@ -1,5 +1,7 @@
 #pragma once
 #include <array>
+#include <filesystem>
+#include <memory>
 #include <string>
 #ifndef __MULTISTAGE2026_HPP_
 #define __MULTISTAGE2026_HPP_
@@ -25,16 +27,17 @@ constexpr int FXVENT{1};
 
 constexpr int TLMSECS{7200};
 
+
 struct VECTOR4F {
 	double x;
 	double y;
 	double z;
 	double t;
 	VECTOR4F(){
-		x = 0.0;
-		y = 0.0;
-		z = 0.0;
-		t = 0.0;
+		x = 0;
+		y = 0;
+		z = 0;
+		t = 0;
 	}
 };
 
@@ -70,6 +73,7 @@ struct BATTS {
 		CurrentCharge = 0.0;
 	}
 };
+
 
 struct EXPBOLT {
 	VECTOR3 pos;
@@ -111,9 +115,36 @@ struct MISC {
 	}
 };
 
+struct MS26_3BOOL {
+    bool a;
+    bool b;
+    bool c;
+};
+
+struct MS26_TLM_REQ {
+    int idx;
+    VECTOR2 out;
+};
+
+
+struct TelemetryData {
+    std::vector<VECTOR2> Alt, Speed, Pitch, Thrust, Mass, Vv, Acc;
+    std::vector<VECTOR2> refAlt, refSpeed, refPitch, refThrust, refMass, refVv, refAcc;
+
+    TelemetryData(size_t size) {
+        Alt.resize(size); Speed.resize(size); Pitch.resize(size);
+        Thrust.resize(size); Mass.resize(size); Vv.resize(size); Acc.resize(size);
+        refAlt.resize(size); refSpeed.resize(size); refPitch.resize(size);
+        refThrust.resize(size); refMass.resize(size); refVv.resize(size); refAcc.resize(size);
+    }
+};
+
 struct TEX {
     std::array<std::string, 16> TextureName;
 	std::array<SURFHANDLE, 16> hTex;
+	TEX() {
+		hTex.fill(nullptr);
+	};
 };
 
 struct PARTICLE {
@@ -243,7 +274,6 @@ struct BOOSTER {
 		msh_h.fill({});
 		isp = 0.0;
 		currDelay = 0.0;
-		Thg_boosters_h = nullptr;
 		IgnitionTime = 0.0;
 		N = 0;
 		wps1 = false;
@@ -586,12 +616,167 @@ struct FAIRING {
 	}
 };
 
-enum GNC_Comand { CM_ROLL, CM_PITCH, CM_ENGINE, CM_FAIRING, CM_LES, CM_DISABLE_PITCH, CM_DISABLE_ROLL, CM_DISABLE_JETTISON, CM_JETTISON, CM_TARGET, CM_AOA, CM_ATTITUDE, CM_SPIN, CM_INVERSE, CM_ORBIT, CM_ENGINEOUT, CM_DEFAP, CM_GLIMIT, CM_DESTROY, CM_EXPLODE, CM_NOLINE };
+enum class GNC_Comand {CM_ROLL, CM_PITCH, CM_ENGINE, CM_FAIRING, CM_LES, CM_DISABLE_PITCH, CM_DISABLE_ROLL, CM_DISABLE_JETTISON, CM_PLAY, CM_JETTISON, CM_TARGET, CM_AOA, CM_ATTITUDE, CM_SPIN, CM_INVERSE, CM_ORBIT, CM_ENGINEOUT, CM_DEFAP, CM_GLIMIT, CM_DESTROY, CM_EXPLODE, CM_NOLINE};
+
+constexpr int VMSG_MS26 = VMSG_USER + 26;
+constexpr int MS26_MAX_BOOSTERS{10};
+constexpr int MS26_MAX_STAGES{10};
+constexpr int MS26_MAX_PAYLOADS{10};
+
+struct MS26_BOOSTER_INFO{
+	double propellantMass;
+	double propellantMaxMass;
+	VECTOR3 boosterRemTimeHMS;
+	int currentBoosterN;
+	double throttle;
+	double thrust;
+};
+
+struct MS26_AddStep {
+    std::string step;
+};
+
+struct MS26_DelStep {
+    int step;
+};
+
+struct MS26_TelemFile{
+	const char *fileToParse;
+};
+
+struct MS26_BOOSTER_BLOCK{
+	int count;
+	MS26_BOOSTER_INFO booster[MS26_MAX_BOOSTERS];
+};
+
+struct MS26_BATTERIES_INFO{
+	double CurrentCharge;
+	double MaxCharge;
+	VECTOR3 remainignCharge;
+};
+
+struct MS26_STAGE_INFO{
+	double propellantMass;
+	double propellantMaxMass;
+	VECTOR3 stageRemTimeHMS;
+	int nengines;
+	double throttle;
+	double thrust;
+	MS26_BATTERIES_INFO batteries;
+};
+
+struct MS26_STAGE_BLOCK{
+	int count;
+	MS26_STAGE_INFO stage[MS26_MAX_STAGES];
+};
+
+struct MS26_GNC_BLOCK{
+	double time;
+	std::string Comand;
+	GNC_Comand gnc_Comand;
+	bool executed;
+	VECTOR3 HMS_tmr, HMS_tmr1;
+	double trval1, trval2, trval3, trval4, trval5, trval6;
+};
+
+struct MS26_GNC_Query {
+    int index;
+    MS26_GNC_BLOCK step;
+};
+
+struct MS26_PAYLOAD_INFO{
+	std::string name;
+	double mass;
+};
+
+struct MS26_DOUBLE_ARRAY{
+	int count;
+	double altsteps[4];
+};
+
+struct MS26_PAYLOAD_BLOCK{
+	int count;
+	MS26_PAYLOAD_INFO payload[MS26_MAX_PAYLOADS];
+};
+
+enum class MS26_CMD{
+	PING,
+	RET_MET,
+	RET_HMS_METVEC,
+	RET_AP_STAT,
+	RET_AP_TGTS,
+	TG_COMPLEX,
+	TG_ATTCTRL,
+	N_STEPS,
+	ADD_STEP,
+	DEL_STEP,
+	WRT_GNC_FILE,
+	TG_AP,
+	WRT_TELEM_FILE,
+	DET_FAIRING,
+	JETTISON,
+	RET_NN,
+	PARSE_TLM_FILE,
+	SET_PEG_MAJOR_CYCLE_INTERVAL,
+	SET_NEW_ALT_STEPS,
+	SET_PEG_PITCH_LIMIT,
+
+	RET_TLM_VIEW,
+	RET_NSTAGES,
+	RET_NBOOSTERS,
+	RET_NPAYLOADS,
+	RET_PAYLOADMASS,
+	RET_ALTSTEPS,
+	RET_GT_IP_CALC,
+	RET_PEGMAJORCYCLEINT,
+	RET_PEGPITCHLIMIT,
+	RET_COMPLEX_STAT,
+	RET_CURR_BOOSTER,
+	RET_CURR_STAGE,
+	RET_PRP_HEADING,
+	RET_TGTPITCH,
+	RET_HEADING,
+	RET_RUNNINGPEG,
+	RET_PMECO_VEC,
+	RET_ATT_CTRL,
+	RET_PITCH_CTRL,
+	RET_YAW_CTRL,
+	RET_ROLL_CTRL,
+	RET_CURRENT_PAYLOAD,
+	RET_LOADED_TLMLINES,
+	RET_TLMIDX,
+
+	RET_PAYLOAD_BLOCK,
+	RET_BOOSTER_BLOCK,
+	RET_STAGE_BLOCK,
+	RET_GNC_COUNT,
+	RET_GNC_STEP,
+};
+
+struct MS26_TLM_VIEW {
+    int n;
+
+    oapi::IVECTOR2* Alt;
+    oapi::IVECTOR2* Speed;
+    oapi::IVECTOR2* Pitch;
+    oapi::IVECTOR2* Thrust;
+    oapi::IVECTOR2* Mass;
+    oapi::IVECTOR2* Vv;
+    oapi::IVECTOR2* Acc;
+
+    oapi::IVECTOR2* refAlt;
+    oapi::IVECTOR2* refSpeed;
+    oapi::IVECTOR2* refPitch;
+    oapi::IVECTOR2* refThrust;
+    oapi::IVECTOR2* refMass;
+    oapi::IVECTOR2* refVv;
+    oapi::IVECTOR2* refAcc;
+};
 
 struct GNC_STEP {
 	double time;
 	std::string Comand;
-	GNC_Comand GNC_Comand;
+	GNC_Comand gnc_Comand;
 	double val_init;
 	double val_fin;
 	double time_init;
@@ -604,7 +789,7 @@ struct GNC_STEP {
     GNC_STEP()
         : time(0.0),
           Comand(),           
-          GNC_Comand(),       
+          gnc_Comand(),       
           val_init(0.0),
           val_fin(0.0),
           time_init(0.0),
@@ -622,6 +807,7 @@ struct GNC_STEP {
     {}
 };
 
+
 struct FX_LAUNCH {
 	double H;
 	int N;
@@ -638,6 +824,7 @@ struct FX_LAUNCH {
 		CutoffAltitude = 0.0;
 	}
 };
+
 
 struct FX_MACH {
 	double mach_min;
@@ -659,6 +846,7 @@ struct FX_MACH {
 		off.fill(_V(0, 0, 0));
 	}
 };
+
 
 struct FX_VENT {
 	std::array<double, 11> time_fin;
@@ -683,10 +871,12 @@ struct Fuel_Levels {
     std::array<double, 10> Boosters_Fuel_Lvls;
 };
 
+
 class Multistage2026 : public VESSEL4{
 
-    friend class DevModeDlg;
+	//friend class DevModeDlg;
     //DevModeDlg *DMD;
+	friend class Multistage2026_MFD;
 
     public:
 
@@ -720,23 +910,23 @@ class Multistage2026 : public VESSEL4{
         void UpdatePMI();
         void UpdateOffsets();
 	    void CreateUllageAndBolts();
-        bool parseinifile(const std::string filename);
-        void parseStages(const std::string filename);
-        void parseBoosters(const std::string filename);
-        void parseInterstages(const std::string filename, int parsingstage);
-        void parseAdapter(const std::string filename);
-        void parseLes(const std::string filename);
-        void parseFairing(const std::string filename);
-        void parsePayload(const std::string filename);
-        void parseMisc(const std::string filename);
-        void parseTexture(const std::string filename);
-        void parseParticle(const std::string filename);
-        void parseFXMach(const std::string filename);
-        void parseFXVent(const std::string filename);
-        void parseFXLaunch(const std::string filename);
+        bool parseinifile(const std::string &filename);
+        void parseStages(const std::string &filename);
+        void parseBoosters(const std::string &filename);
+        void parseInterstages(const std::string &filename, int parsingstage);
+        void parseAdapter(const std::string &filename);
+        void parseLes(const std::string &filename);
+        void parseFairing(const std::string &filename);
+        void parsePayload(const std::string &filename);
+        void parseMisc(const std::string &filename);
+        void parseTexture(const std::string &filename);
+        void parseParticle(const std::string &filename);
+        void parseFXMach(const std::string &filename);
+        void parseFXVent(const std::string &filename);
+        void parseFXLaunch(const std::string &filename);
         VECTOR3 GetBoosterPos(int nBooster, int N);
         void ArrangePayloadMeshes(const std::string &data, int pnl);
-        std::string GetProperPayloadMeshName(int pnl, int n);
+        const std::string GetProperPayloadMeshName(int pnl, int n);
         void ArrangePayloadOffsets(const std::string &data, int pnl);
         void Jettison(int type, int current);
         void Spawn(int type, int current);
@@ -769,7 +959,8 @@ class Multistage2026 : public VESSEL4{
 
 
         void WriteGNCFile();
-        void parseGuidanceFile(const std::string filename);
+        void parseGuidanceFile(const std::string &filename);
+		void ParseGNCParams(std::string params, GNC_STEP &step);
 
         void VinkaComposeGNCSteps();
 	    GNC_STEP VinkaComposeSpecificGNCSteps(GNC_STEP gnc);
@@ -854,7 +1045,7 @@ class Multistage2026 : public VESSEL4{
 
         void Telemetry();
         int WriteTelemetryFile(int initline);
-	    void parseTelemetryFile(const std::string filename);
+	    void parseTelemetryFile(const std::string &filename);
 
         double CalculateFullMass();
         void ResetVehicle(VECTOR3 hangaranimsV, bool Ramp);
@@ -874,13 +1065,20 @@ class Multistage2026 : public VESSEL4{
         VECTOR3 GetAPTargets();
 
     private:
+
+		std::filesystem::path Multistage2026_folder = "Multistage2026";
+		std::filesystem::path Guidance_folder = "Guidance";
+		std::filesystem::path Config_folder = "Config";
+		std::filesystem::path Telemetry_folder = "Telemetry";
+
+		double t_start;
 	    
         int MyID;
 	    THGROUP_HANDLE thg_h_main;
         double particlesdt;
         bool GrowingParticles;
         double RefPressure;
-        std::array<GNC_STEP, 150> Gnc_step;
+        std::vector<GNC_STEP> Gnc_step;
         double TotalHeight;
         std::string dataparsed;
         int Configuration;
@@ -907,10 +1105,9 @@ class Multistage2026 : public VESSEL4{
         bool wLaunchFX;
         int wFairing;
 
-        std::array<STAGE, 10> stage;
-	    std::array<BOOSTER, 10> booster;
-
-        std::array<PAYLOAD, 10> payload;
+		std::unique_ptr<std::vector<BOOSTER>> booster;
+		std::unique_ptr<std::vector<STAGE>> stage;
+        std::unique_ptr<std::vector<PAYLOAD>> payload;
         FAIRING fairing;
         MISC Misc;
         TEX tex;
@@ -1065,20 +1262,7 @@ class Multistage2026 : public VESSEL4{
 
         std::string tlmfile;
 
-        std::array<VECTOR2, TLMSECS> tlmAlt;
-        std::array<VECTOR2, TLMSECS> tlmSpeed;
-        std::array<VECTOR2, TLMSECS> tlmPitch;
-        std::array<VECTOR2, TLMSECS> tlmThrust;
-        std::array<VECTOR2, TLMSECS> tlmMass;
-        std::array<VECTOR2, TLMSECS> tlmVv;
-        std::array<VECTOR2, TLMSECS> tlmAcc;
-        std::array<VECTOR2, TLMSECS> ReftlmAlt;
-        std::array<VECTOR2, TLMSECS> ReftlmSpeed;
-        std::array<VECTOR2, TLMSECS> ReftlmPitch;
-        std::array<VECTOR2, TLMSECS> ReftlmThrust;
-        std::array<VECTOR2, TLMSECS> ReftlmMass;
-        std::array<VECTOR2, TLMSECS> ReftlmVv;
-        std::array<VECTOR2, TLMSECS> ReftlmAcc;
+        std::shared_ptr<TelemetryData> tlm;
 
         double updtlm;
         double writetlmTimer;

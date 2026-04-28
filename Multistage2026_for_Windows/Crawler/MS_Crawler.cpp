@@ -1,7 +1,10 @@
 #include "MS_Crawler.hpp"
 #include <array>
+#include <cstring>
 #include <format>
+#include <minwindef.h>
 #define ORBITER_MODULE
+#define STRICT
 
 //Creation
 MS_Crawler::MS_Crawler(OBJHANDLE hObj, int fmodel) : VESSEL4(hObj, fmodel) {
@@ -71,7 +74,7 @@ MS_Crawler::MS_Crawler(OBJHANDLE hObj, int fmodel) : VESSEL4(hObj, fmodel) {
 
 	vPad = nullptr;
 
-	vsPad = { 0 };
+	vsPad = {};
 
 	AttPadCrawler = nullptr;
 
@@ -320,7 +323,7 @@ void MS_Crawler::clbkSetClassCaps(FILEHANDLE cfg){
     }
 
     char buffer[256] = {};
-    oapiReadItem_string(cfg, const_cast<char*>("PAD_MESH"), buffer);
+    oapiReadItem_string(cfg, const_cast<char*>("Pad_Mesh"), buffer);
     PadMesh = buffer;
 
     PadModule.clear();
@@ -328,18 +331,18 @@ void MS_Crawler::clbkSetClassCaps(FILEHANDLE cfg){
     wCustomPadModule = false;
 
     char buffer2[256] = {};
-    oapiReadItem_string(cfg, const_cast<char*>("PAD_MODULE"), buffer);
+    oapiReadItem_string(cfg, const_cast<char*>("PAD_MODULE"), buffer2);
     PadModule = buffer2;
 
     if(!PadModule.empty()){
         wCustomPadModule = true;
     }
 
-    if(PadModule != "NOPAD"){
-        NoPad = true;
-    } else {
-        NoPad = false;
-    }
+    if (PadModule == "NOPAD") {
+    	NoPad = true;
+	} else {
+    	NoPad = false;
+	}
 
 }
 
