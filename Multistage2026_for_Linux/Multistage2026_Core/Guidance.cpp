@@ -293,217 +293,152 @@ void Multistage2026::VinkaUpdateRollTime(){
 }
 
 void Multistage2026::VinkaComposeGNCSteps(){
-	
-	for(int i=0;i<=nsteps;i++){
-		Gnc_step.at(i).executed=false;
-		
-		Gnc_step.at(i).Comand = Gnc_step.at(i).Comand;
-		
-		if(Gnc_step.at(i).Comand == "engine"){
-			Gnc_step.at(i).gnc_Comand=GNC_Comand::CM_ENGINE;
-		}else if(Gnc_step.at(i).Comand == "roll"){
-			Gnc_step.at(i).gnc_Comand=GNC_Comand::CM_ROLL;
-		}else if(Gnc_step.at(i).Comand == "pitch"){
-			Gnc_step.at(i).gnc_Comand=GNC_Comand::CM_PITCH;
-		}else if(Gnc_step.at(i).Comand == "fairing"){
-			Gnc_step.at(i).gnc_Comand=GNC_Comand::CM_FAIRING;
-		}else if(Gnc_step.at(i).Comand == "les"){
-			Gnc_step.at(i).gnc_Comand=GNC_Comand::CM_LES;
-		}else if(Gnc_step.at(i).Comand == "disablepitch"){
-			Gnc_step.at(i).gnc_Comand=GNC_Comand::CM_DISABLE_PITCH;
-		}else if(Gnc_step.at(i).Comand == "disableroll"){
-			Gnc_step.at(i).gnc_Comand=GNC_Comand::CM_DISABLE_ROLL;
-		}else if(Gnc_step.at(i).Comand == "disablejettison"){
-			Gnc_step.at(i).gnc_Comand=GNC_Comand::CM_DISABLE_JETTISON;
-		}else if(Gnc_step.at(i).Comand == "jettison"){
-			Gnc_step.at(i).gnc_Comand=GNC_Comand::CM_JETTISON;
-		}else if(Gnc_step.at(i).Comand == "target"){
-			Gnc_step.at(i).gnc_Comand=GNC_Comand::CM_TARGET;
-		}else if(Gnc_step.at(i).Comand == "aoa"){
-			Gnc_step.at(i).gnc_Comand=GNC_Comand::CM_AOA;
-		}else if(Gnc_step.at(i).Comand == "attitude"){
-			Gnc_step.at(i).gnc_Comand=GNC_Comand::CM_ATTITUDE;
-		}else if(Gnc_step.at(i).Comand == "spin"){
-			Gnc_step.at(i).gnc_Comand=GNC_Comand::CM_SPIN;
-		}else if(Gnc_step.at(i).Comand == "inverse"){
-			Gnc_step.at(i).gnc_Comand=GNC_Comand::CM_INVERSE;
-		}else if(Gnc_step.at(i).Comand == "engineout"){
-			Gnc_step.at(i).gnc_Comand=GNC_Comand::CM_ENGINEOUT;
-		}else if(Gnc_step.at(i).Comand == "orbit"){
-			Gnc_step.at(i).gnc_Comand=GNC_Comand::CM_ORBIT;
-		}else if(Gnc_step.at(i).Comand == "defap"){
-			Gnc_step.at(i).gnc_Comand=GNC_Comand::CM_DEFAP;
-		}else if(Gnc_step.at(i).Comand == "glimit"){
-			Gnc_step.at(i).gnc_Comand=GNC_Comand::CM_GLIMIT;
-		}else if(Gnc_step.at(i).Comand == "destroy"){
-			Gnc_step.at(i).gnc_Comand=GNC_Comand::CM_DESTROY;
-		}else if(Gnc_step.at(i).Comand == "explode"){
-			Gnc_step.at(i).gnc_Comand=GNC_Comand::CM_EXPLODE;
-		}else if(Gnc_step.at(i).Comand == "noline"){
-			Gnc_step.at(i).gnc_Comand=GNC_Comand::CM_NOLINE;
-		}
 
-		Gnc_step.at(0).time_fin=-10000;
+    for(int i = 0; i <= nsteps; i++){
 
-		switch(Gnc_step.at(i).gnc_Comand){
-		
-		case GNC_Comand::CM_ENGINE:
-			Gnc_step.at(i).val_init=Gnc_step.at(i).trval1;
-			Gnc_step.at(i).val_fin=Gnc_step.at(i).trval2;
-			if(Gnc_step.at(i).val_fin){Gnc_step.at(i).val_fin=-1;}
-			Gnc_step.at(i).time_init=Gnc_step.at(i).time;
-			Gnc_step.at(i).duration=Gnc_step.at(i).trval3;
-			if(Gnc_step.at(i).duration){Gnc_step.at(i).duration=0.01;}
-			Gnc_step.at(i).time_fin=Gnc_step.at(i).time_init+Gnc_step.at(i).duration;
-			break;
+        Gnc_step.at(i).executed = false;
 
-		case GNC_Comand::CM_ROLL:
-			Gnc_step.at(i).time_init=Gnc_step.at(i).time;
-			Gnc_step.at(i).val_init=Gnc_step.at(i).trval2;
-			Gnc_step.at(i).val_fin=Gnc_step.at(i).trval4;
-			Gnc_step.at(i).duration=60;//Gnc_step.at(i).trval1;
-			Gnc_step.at(i).time_fin=Gnc_step.at(i).time_init+Gnc_step.at(i).duration;
-			
-			//VinkaAzimuth=Gnc_step.at(i).trval3*RAD;
-			//VinkaMode=Gnc_step.at(i).trval5;
-		
-			
-			break;
-		
-		case GNC_Comand::CM_PITCH:
-			Gnc_step.at(i).time_init=Gnc_step.at(i).time;
-			Gnc_step.at(i).val_init=Gnc_step.at(i).trval1;
-			Gnc_step.at(i).val_fin=Gnc_step.at(i).trval2;
-			Gnc_step.at(i).duration=Gnc_step.at(i).trval3;
-			Gnc_step.at(i).time_fin=Gnc_step.at(i).time_init+Gnc_step.at(i).duration;
-			break;
+        // Normalizar comando
+        if(Gnc_step.at(i).Comand == "engine"){
+            Gnc_step.at(i).gnc_Comand = GNC_Comand::CM_ENGINE;
+        } else if(Gnc_step.at(i).Comand == "roll"){
+            Gnc_step.at(i).gnc_Comand = GNC_Comand::CM_ROLL;
+        } else if(Gnc_step.at(i).Comand == "pitch"){
+            Gnc_step.at(i).gnc_Comand = GNC_Comand::CM_PITCH;
+        } else if(Gnc_step.at(i).Comand == "fairing"){
+            Gnc_step.at(i).gnc_Comand = GNC_Comand::CM_FAIRING;
+        } else if(Gnc_step.at(i).Comand == "les"){
+            Gnc_step.at(i).gnc_Comand = GNC_Comand::CM_LES;
+        } else if(Gnc_step.at(i).Comand == "disablepitch"){
+            Gnc_step.at(i).gnc_Comand = GNC_Comand::CM_DISABLE_PITCH;
+        } else if(Gnc_step.at(i).Comand == "disableroll"){
+            Gnc_step.at(i).gnc_Comand = GNC_Comand::CM_DISABLE_ROLL;
+        } else if(Gnc_step.at(i).Comand == "disablejettison"){
+            Gnc_step.at(i).gnc_Comand = GNC_Comand::CM_DISABLE_JETTISON;
+        } else if(Gnc_step.at(i).Comand == "jettison"){
+            Gnc_step.at(i).gnc_Comand = GNC_Comand::CM_JETTISON;
+        } else if(Gnc_step.at(i).Comand == "target"){
+            Gnc_step.at(i).gnc_Comand = GNC_Comand::CM_TARGET;
+        } else if(Gnc_step.at(i).Comand == "aoa"){
+            Gnc_step.at(i).gnc_Comand = GNC_Comand::CM_AOA;
+        } else if(Gnc_step.at(i).Comand == "attitude"){
+            Gnc_step.at(i).gnc_Comand = GNC_Comand::CM_ATTITUDE;
+        } else if(Gnc_step.at(i).Comand == "spin"){
+            Gnc_step.at(i).gnc_Comand = GNC_Comand::CM_SPIN;
+        } else if(Gnc_step.at(i).Comand == "inverse"){
+            Gnc_step.at(i).gnc_Comand = GNC_Comand::CM_INVERSE;
+        } else if(Gnc_step.at(i).Comand == "engineout"){
+            Gnc_step.at(i).gnc_Comand = GNC_Comand::CM_ENGINEOUT;
+        } else if(Gnc_step.at(i).Comand == "orbit"){
+            Gnc_step.at(i).gnc_Comand = GNC_Comand::CM_ORBIT;
+        } else if(Gnc_step.at(i).Comand == "defap"){
+            Gnc_step.at(i).gnc_Comand = GNC_Comand::CM_DEFAP;
+        } else if(Gnc_step.at(i).Comand == "glimit"){
+            Gnc_step.at(i).gnc_Comand = GNC_Comand::CM_GLIMIT;
+        } else if(Gnc_step.at(i).Comand == "destroy"){
+            Gnc_step.at(i).gnc_Comand = GNC_Comand::CM_DESTROY;
+        } else if(Gnc_step.at(i).Comand == "explode"){
+            Gnc_step.at(i).gnc_Comand = GNC_Comand::CM_EXPLODE;
+        } else {
+            Gnc_step.at(i).gnc_Comand = GNC_Comand::CM_NOLINE;
+        }
 
-			
-		case GNC_Comand::CM_FAIRING:
-			Gnc_step.at(i).time_init=Gnc_step.at(i).time;
-			Gnc_step.at(i).val_init=Gnc_step.at(i).trval1*1000;
-			Gnc_step.at(i).time_fin=Gnc_step.at(i).time_init+1000;
-			break;
-		case GNC_Comand::CM_LES:
-			Gnc_step.at(i).time_init=Gnc_step.at(i).time;
-			Gnc_step.at(i).val_init=Gnc_step.at(i).trval1*1000;
-			Gnc_step.at(i).time_fin=Gnc_step.at(i).time_init+1000;
-			break;
-		case GNC_Comand::CM_DISABLE_JETTISON:
-			Gnc_step.at(i).time_init=Gnc_step.at(i).time;
-			Gnc_step.at(i).time_fin=Gnc_step.at(i).time_init+2;
-			break;
-		case GNC_Comand::CM_DISABLE_PITCH:
-			Gnc_step.at(i).time_init=Gnc_step.at(i).time;
-			Gnc_step.at(i).time_fin=Gnc_step.at(i).time_init+2;
-			break;
-		case GNC_Comand::CM_DISABLE_ROLL:
-			Gnc_step.at(i).time_init=Gnc_step.at(i).time;
-			Gnc_step.at(i).time_fin=Gnc_step.at(i).time_init+2;
-			break;
-		case GNC_Comand::CM_JETTISON:
-			Gnc_step.at(i).time_init=Gnc_step.at(i).time;
-			Gnc_step.at(i).time_fin=Gnc_step.at(i).time_init+2;
-			break;
-		case GNC_Comand::CM_AOA:
-			Gnc_step.at(i).time_init=Gnc_step.at(i).time;
-			Gnc_step.at(i).duration=Gnc_step.at(i).trval2;
-			
-			if(Gnc_step.at(i).duration<=0){
-		
-				if(i<nsteps){
-					Gnc_step.at(i).time_fin=Gnc_step.at(i+1).time;
-				}else{
-					Gnc_step.at(i).time_fin=Gnc_step.at(i).time_init+60;
-				}
-			}else{
-				Gnc_step.at(i).time_fin=Gnc_step.at(i).time_init+Gnc_step.at(i).duration;
-			}
+        Gnc_step.at(0).time_fin = -10000;
 
-			
-			Gnc_step.at(i).val_init=Gnc_step.at(i).trval1*RAD;
-			
-			
-			break;
-		case GNC_Comand::CM_ATTITUDE:
-			Gnc_step.at(i).time_init=Gnc_step.at(i).time;
-			Gnc_step.at(i).duration=Gnc_step.at(i).trval4;
-			if(Gnc_step.at(i).duration<=0){
-				
-				if(i<nsteps){
-					Gnc_step.at(i).time_fin=Gnc_step.at(i+1).time;
-				}else{
-					Gnc_step.at(i).time_fin=Gnc_step.at(i).time_init+60;
-				}
-			}else{
-				Gnc_step.at(i).time_fin=Gnc_step.at(i).time_init+Gnc_step.at(i).duration;
-			}
-			break;
-		case GNC_Comand::CM_SPIN:
-			Gnc_step.at(i).time_init=Gnc_step.at(i).time;
+        switch(Gnc_step.at(i).gnc_Comand){
 
-			if(i<nsteps){
-					Gnc_step.at(i).time_fin=Gnc_step.at(i + 1).time;
-				}else{
-					Gnc_step.at(i).time_fin=Gnc_step.at(i).time_init+60;
-				}
-			Gnc_step.at(i).val_init=Gnc_step.at(i).trval1;
-			break;
-		case GNC_Comand::CM_TARGET:
-			Gnc_step.at(i).time_init=Gnc_step.at(i).time;
-			Gnc_step.at(i).time_fin=Gnc_step.at(i).time_init+5*60;
-			Gnc_step.at(i).val_init=Gnc_step.at(i).trval1;
-			break;
-		case GNC_Comand::CM_INVERSE:
-			Gnc_step.at(i).time_init=Gnc_step.at(i).time;
-			Gnc_step.at(i).time_fin=Gnc_step.at(i).time_init+2;
-			break;
-		case GNC_Comand::CM_ENGINEOUT:
-			Gnc_step.at(i).time_init=Gnc_step.at(i).time;
-			Gnc_step.at(i).time_fin=Gnc_step.at(i).time_init+1;
-			Gnc_step.at(i).val_init=Gnc_step.at(i).trval1;
-			break;
-		case GNC_Comand::CM_ORBIT:
-			Gnc_step.at(i).time_init=Gnc_step.at(i).time;
-			Gnc_step.at(i).time_fin=Gnc_step.at(i).time_init+10000;
-			tgtapo=Gnc_step.at(i).trval2*1000;
-			tgtperi=Gnc_step.at(i).trval1*1000;
-			tgtinc=Gnc_step.at(i).trval3*RAD;
-			VinkaMode=Gnc_step.at(i).trval4;
-			if(VinkaMode){VinkaMode=1;}
-			GT_InitPitch=Gnc_step.at(i).trval5*RAD;
-			tgtabside=Gnc_step.at(i).trval6*1000;
-			wPeg=true;
-			CalculateTargets();
-			logbuff = std::format("{}: Orbit Call Found! Targets: Apogee:{:.1f} Perigee:{:.1f} Inclination:{:.1f} Mode:{:.1f} GT initial Pitch: {:.1f} Abside:{:.1f}",GetName(),tgtapo,tgtperi,tgtinc*DEG,VinkaMode,GT_InitPitch*DEG,tgtabside);
-			oapiWriteLog(const_cast<char *>(logbuff.c_str()));
-			break;
-		case GNC_Comand::CM_DEFAP:
-			Gnc_step.at(i).time_init=Gnc_step.at(i).time;
-			Gnc_step.at(i).time_fin=Gnc_step.at(i).time_init+2;
-			break;
-		case GNC_Comand::CM_GLIMIT:
-			Gnc_step.at(i).time_init=Gnc_step.at(i).time;
-			Gnc_step.at(i).time_fin=Gnc_step.at(i).time_init+250;
-			break;
-		case GNC_Comand::CM_DESTROY:
-			Gnc_step.at(i).time_init=Gnc_step.at(i).time;
-			Gnc_step.at(i).time_fin=Gnc_step.at(i).time_init+2;
-			break;
-		case GNC_Comand::CM_EXPLODE:
-			Gnc_step.at(i).time_init=Gnc_step.at(i).time;
-			Gnc_step.at(i).time_fin=Gnc_step.at(i).time_init+2;
-			break;
-		case GNC_Comand::CM_NOLINE:
-			
-			break;
+        case GNC_Comand::CM_ENGINE:
+            Gnc_step.at(i).val_init = Gnc_step.at(i).trval1;
+            Gnc_step.at(i).val_fin  = Gnc_step.at(i).trval2;
 
-		}
-	}
+            Gnc_step.at(i).time_init = Gnc_step.at(i).time;
 
-	if(!wPeg){
-		VinkaUpdateRollTime();
-	}
+            Gnc_step.at(i).duration = Gnc_step.at(i).trval3;
+            if(Gnc_step.at(i).duration <= 0){
+                Gnc_step.at(i).duration = 0.01;
+            }
+
+            Gnc_step.at(i).time_fin =
+                Gnc_step.at(i).time_init + Gnc_step.at(i).duration;
+            break;
+
+        case GNC_Comand::CM_PITCH:
+            Gnc_step.at(i).time_init = Gnc_step.at(i).time;
+            Gnc_step.at(i).val_init  = Gnc_step.at(i).trval1;
+            Gnc_step.at(i).val_fin   = Gnc_step.at(i).trval2;
+            Gnc_step.at(i).duration  = Gnc_step.at(i).trval3;
+
+            if(Gnc_step.at(i).duration <= 0){
+                Gnc_step.at(i).duration = 0.01;
+            }
+
+            Gnc_step.at(i).time_fin =
+                Gnc_step.at(i).time_init + Gnc_step.at(i).duration;
+            break;
+
+        case GNC_Comand::CM_ROLL:
+            Gnc_step.at(i).time_init = Gnc_step.at(i).time;
+            Gnc_step.at(i).val_init  = Gnc_step.at(i).trval2;
+            Gnc_step.at(i).val_fin   = Gnc_step.at(i).trval4;
+            Gnc_step.at(i).duration  = 60;
+            Gnc_step.at(i).time_fin  = Gnc_step.at(i).time_init + Gnc_step.at(i).duration;
+            break;
+
+        case GNC_Comand::CM_FAIRING:
+        case GNC_Comand::CM_LES:
+            Gnc_step.at(i).time_init = Gnc_step.at(i).time;
+            Gnc_step.at(i).val_init  = Gnc_step.at(i).trval1 * 1000;
+            Gnc_step.at(i).time_fin  = Gnc_step.at(i).time_init + 1000;
+            break;
+
+        case GNC_Comand::CM_DISABLE_JETTISON:
+        case GNC_Comand::CM_DISABLE_PITCH:
+        case GNC_Comand::CM_DISABLE_ROLL:
+        case GNC_Comand::CM_JETTISON:
+        case GNC_Comand::CM_DEFAP:
+        case GNC_Comand::CM_DESTROY:
+        case GNC_Comand::CM_EXPLODE:
+            Gnc_step.at(i).time_init = Gnc_step.at(i).time;
+            Gnc_step.at(i).time_fin  = Gnc_step.at(i).time_init + 2;
+            break;
+
+        case GNC_Comand::CM_GLIMIT:
+            Gnc_step.at(i).time_init = Gnc_step.at(i).time;
+            Gnc_step.at(i).time_fin  = Gnc_step.at(i).time_init + 250;
+            break;
+
+        case GNC_Comand::CM_ENGINEOUT:
+            Gnc_step.at(i).time_init = Gnc_step.at(i).time;
+            Gnc_step.at(i).time_fin  = Gnc_step.at(i).time_init + 1;
+            Gnc_step.at(i).val_init  = Gnc_step.at(i).trval1;
+            break;
+
+        case GNC_Comand::CM_ORBIT:
+            Gnc_step.at(i).time_init = Gnc_step.at(i).time;
+            Gnc_step.at(i).time_fin  = Gnc_step.at(i).time_init + 10000;
+
+            tgtapo = Gnc_step.at(i).trval2 * 1000;
+            tgtperi = Gnc_step.at(i).trval1 * 1000;
+            tgtinc = Gnc_step.at(i).trval3 * RAD;
+
+            VinkaMode = Gnc_step.at(i).trval4 ? 1 : 0;
+            GT_InitPitch = Gnc_step.at(i).trval5 * RAD;
+            tgtabside = Gnc_step.at(i).trval6 * 1000;
+
+            wPeg = true;
+            CalculateTargets();
+
+            oapiWriteLog("Orbit Call Found!");
+            break;
+
+        default:
+            break;
+        }
+    }
+
+    if(!wPeg){
+        VinkaUpdateRollTime();
+    }
 }
 
 double Multistage2026::VinkaFindEndTime(){

@@ -747,12 +747,16 @@ void Multistage2026::parseParticle(const std::string &filename) {
 
 		partxt = std::format("PARTICLESTREAM_{}", npart + 1);
 
-		dataparsed = ini.GetValue(partxt.c_str(), "name", "");
-		if(dataparsed.empty()){
+		const char* name = ini.GetValue(partxt.c_str(), "name", nullptr);
+		if (!name) name = ini.GetValue(partxt.c_str(), "Name", nullptr);
+		if (!name) name = ini.GetValue(partxt.c_str(), "NAME", nullptr);
+
+		if (!name) {
 			nParticles = npart;
 			break;
 		}
-		Particle.at(npart).ParticleName = dataparsed;
+
+		Particle.at(npart).ParticleName = name;
 
 		Particle.at(npart).Pss.srcsize = ini.GetDoubleValue(partxt.c_str(), "srcsize", 0.0);
 		
@@ -836,124 +840,174 @@ void Multistage2026::parseParticle(const std::string &filename) {
 	}
 }
 
-void Multistage2026::parseFXMach(const std::string &filename){
+void Multistage2026::parseFXMach(const std::string &filename)
+{
+    oapiWriteLogV("%s: parseFXMach() filename=%s", GetName(), filename.c_str());
 
-	oapiWriteLogV("%s: parseFXMach() filename=%s", GetName(), filename.c_str());
+    CSimpleIniA ini(true, false, false);
 
-	CSimpleIniA ini(true, false, false);
-
-	if (ini.LoadFile(filename.c_str()) < 0) {
+    if (ini.LoadFile(filename.c_str()) < 0) {
         oapiWriteLogV("%s: Failed to load INI configuration file: %s", GetName(), filename.c_str());
         return;
     }
 
-	std::string fxmtxt = "FX_MACH";
+    const char* section = "FX_MACH";
 
-	FX_Mach.pstream = ini.GetValue(fxmtxt.c_str(), "pstream", "");
-	if(FX_Mach.pstream.empty()){
-		wMach = false;
-	} else {
-		wMach = true;
-	}
+    // --- pstream ---
+    const char* pstream = ini.GetValue(section, "pstream", nullptr);
+    if (!pstream || std::string(pstream).empty()) {
+        wMach = false;
+        FX_Mach.pstream.clear();
+        return;
+    } else {
+        wMach = true;
+        FX_Mach.pstream = pstream;
+    }
 
-	
-	FX_Mach.mach_min = ini.GetDoubleValue(fxmtxt.c_str(), "mach_min", 0.0);
+    // --- rangos ---
+    FX_Mach.mach_min = ini.GetDoubleValue(section, "mach_min", 0.0);
+    FX_Mach.mach_max = ini.GetDoubleValue(section, "mach_max", 0.0);
 
-	FX_Mach.mach_max = ini.GetDoubleValue(fxmtxt.c_str(), "mach_max", 0.0);
+    FX_Mach.nmach = 0;
 
-	for (int nmach = 0; nmach < 10; nmach++){
-		std::string txtbuff = std::format("off_{}", nmach + 1);
-		
-		std::string fxmachoff_vec = ini.GetValue(fxmtxt.c_str(), txtbuff.c_str(), "0,0,0");
+    // --- offsets ---
+    for (int i = 0; i < 10; i++)
+    {
+        int idx = i + 1;
+        std::string key = std::format("off_{}", idx);
 
-		FX_Mach.off.at(nmach) = CharToVec(fxmachoff_vec);
-		if(fxmachoff_vec.empty()){
-			FX_Mach.nmach = nmach;
-			break;
-		}
-	}
-	
-	std::string fxmachdir_vec = ini.GetValue(fxmtxt.c_str(), "dir", "0,0,0");
-	FX_Mach.dir = CharToVec(fxmachdir_vec);
-	FX_Mach.added = false;
+        const char* raw = ini.GetValue(section, key.c_str(), nullptr);
 
+        // si no existe → terminamos lista
+        if (!raw) {
+            break;
+        }
+
+        FX_Mach.off.at(i) = CharToVec(raw);
+        FX_Mach.nmach++;
+    }
+
+    // --- dirección ---
+    const char* dir_raw = ini.GetValue(section, "dir", nullptr);
+    if (dir_raw) {
+        FX_Mach.dir = CharToVec(dir_raw);
+    } else {
+        FX_Mach.dir = _V(0,0,0);
+    }
+
+    FX_Mach.added = false;
+
+    oapiWriteLogV("%s: FX_MACH parsed (nmach=%d, pstream=%s)",
+        GetName(),
+        FX_Mach.nmach,
+        FX_Mach.pstream.c_str()
+    );
 }
 
 void Multistage2026::parseFXVent(const std::string &filename)
 {
-	oapiWriteLogV("%s: parseFXVent() filename=%s", GetName(), filename.c_str());
+    oapiWriteLogV("%s: parseFXVent() filename=%s", GetName(), filename.c_str());
 
-	CSimpleIniA ini(true, false, false);
+    CSimpleIniA ini(true, false, false);
 
-	if (ini.LoadFile(filename.c_str()) < 0) {
+    if (ini.LoadFile(filename.c_str()) < 0) {
         oapiWriteLogV("%s: Failed to load INI configuration file: %s", GetName(), filename.c_str());
         return;
     }
 
-	std::string fxvtxt = "FX_VENT";
-	std::string itemtxt;
-	std::string numtxt;
+    const char* section = "FX_VENT";
 
-	FX_Vent.pstream = ini.GetValue(fxvtxt.c_str(), "pstream", "");
-	if(FX_Vent.pstream.empty()){
-		wVent = false;
-	} else {
-		wVent = true;
-	}
+    // --- pstream ---
+    const char* pstream = ini.GetValue(section, "pstream", nullptr);
+    if (!pstream || std::string(pstream).empty()) {
+        wVent = false;
+        FX_Vent.pstream.clear();
+        return; // si no hay pstream, no tiene sentido seguir
+    } else {
+        wVent = true;
+        FX_Vent.pstream = pstream;
+    }
 
+    FX_Vent.nVent = 0;
 
-	FX_Vent.nVent = 0;
-	for (int fv = 1; fv <= 10; fv++)
-	{
-		FX_Vent.added.at(fv) = false;
+    // --- loop vents ---
+    for (int i = 0; i < 10; i++)
+    {
+        int idx = i + 1; // nombres tipo off_1, off_2...
 
-		itemtxt = std::format("off_{}", fv);
+        FX_Vent.added.at(i) = false;
 
-		std::string off_vec = ini.GetValue(fxvtxt.c_str(), itemtxt.c_str(), "0,0,0");
-		FX_Vent.off.at(fv) = CharToVec(off_vec);
+        // -------- OFF --------
+        std::string key_off = std::format("off_{}", idx);
+        const char* off_raw = ini.GetValue(section, key_off.c_str(), nullptr);
 
-		itemtxt = std::format("dir_{}", fv);
-		std::string dir_vec = ini.GetValue(fxvtxt.c_str(), itemtxt.c_str(), "0,0,0");
+        if (off_raw) {
+            FX_Vent.off.at(i) = CharToVec(off_raw);
+        } else {
+            FX_Vent.off.at(i) = _V(0,0,0);
+        }
 
-		if(dir_vec.empty()){
-			FX_Vent.nVent = fv - 1;
-			break;
-		}
-		FX_Vent.dir.at(fv) = CharToVec(dir_vec);
+        // -------- DIR (CRÍTICO) --------
+        std::string key_dir = std::format("dir_{}", idx);
+        const char* dir_raw = ini.GetValue(section, key_dir.c_str(), nullptr);
 
-		itemtxt = std::format("time_fin_{}", fv);
-		FX_Vent.time_fin.at(fv) = 0;
+        // Si no existe dir_N → terminamos lista
+        if (!dir_raw) {
+            break;
+        }
 
-		FX_Vent.time_fin.at(fv) = ini.GetDoubleValue(fxvtxt.c_str(), itemtxt.c_str(), 0.0);
-	}
+        FX_Vent.dir.at(i) = CharToVec(dir_raw);
+
+        // -------- TIME_FIN --------
+        std::string key_time = std::format("time_fin_{}", idx);
+        FX_Vent.time_fin.at(i) = ini.GetDoubleValue(section, key_time.c_str(), 0.0);
+
+        // contamos este vent como válido
+        FX_Vent.nVent++;
+    }
+
+    oapiWriteLogV("%s: FX_VENT parsed, nVent=%d, pstream=%s",
+        GetName(), FX_Vent.nVent, FX_Vent.pstream.c_str());
 }
 
-void Multistage2026::parseFXLaunch(const std::string &filename){
+void Multistage2026::parseFXLaunch(const std::string &filename)
+{
+    oapiWriteLogV("%s: parseFXLaunch() filename=%s", GetName(), filename.c_str());
 
-	oapiWriteLogV("%s: parseFXLaunch() filename=%s", GetName(), filename.c_str());
+    CSimpleIniA ini(true, false, false);
 
-	CSimpleIniA ini(true, false, false);
-
-	if (ini.LoadFile(filename.c_str()) < 0) {
+    if (ini.LoadFile(filename.c_str()) < 0) {
         oapiWriteLogV("%s: Failed to load INI configuration file: %s", GetName(), filename.c_str());
         return;
     }
-	
-	std::string fxLtxt = "FX_LAUNCH";
 
-	FX_Launch.N = ini.GetLongValue(fxLtxt.c_str(), "N", 0);
-	FX_Launch.H = ini.GetDoubleValue(fxLtxt.c_str(), "Height", 0.0);
-	FX_Launch.Angle = ini.GetDoubleValue(fxLtxt.c_str(), "Angle", 0.0);
-	FX_Launch.Distance = ini.GetDoubleValue(fxLtxt.c_str(), "Distance", 0.0);
-	FX_Launch.CutoffAltitude = ini.GetDoubleValue(fxLtxt.c_str(), "CutoffAltitude", 0.0);
-	dataparsed = ini.GetValue(fxLtxt.c_str(), "pstream1", "");
-	FX_Launch.Ps1 = dataparsed;
-	dataparsed = ini.GetValue(fxLtxt.c_str(), "pstream2", "");
-	FX_Launch.Ps2 = dataparsed;
+    const char* section = "FX_LAUNCH";
 
-	if(FX_Launch.N >= 1){ 
-		wLaunchFX = true;
-	}
+    FX_Launch.N = ini.GetLongValue(section, "N", 0);
+    FX_Launch.H = ini.GetDoubleValue(section, "Height", 0.0);
+    FX_Launch.Angle = ini.GetDoubleValue(section, "Angle", 0.0);
+    FX_Launch.Distance = ini.GetDoubleValue(section, "Distance", 0.0);
+    FX_Launch.CutoffAltitude = ini.GetDoubleValue(section, "CutoffAltitude", 0.0);
+
+    const char* ps1 = ini.GetValue(section, "pstream1", nullptr);
+    const char* ps2 = ini.GetValue(section, "pstream2", nullptr);
+
+    FX_Launch.Ps1 = ps1 ? ps1 : "";
+    FX_Launch.Ps2 = ps2 ? ps2 : "";
+
+    // Validación real
+    if (FX_Launch.N > 0 && !FX_Launch.Ps1.empty()) {
+        wLaunchFX = true;
+    } else {
+        wLaunchFX = false;
+    }
+
+    oapiWriteLogV("%s: FX_LAUNCH parsed (N=%d, Ps1=%s, Ps2=%s)",
+        GetName(),
+        FX_Launch.N,
+        FX_Launch.Ps1.c_str(),
+        FX_Launch.Ps2.c_str()
+    );
 }
 
 
@@ -1084,14 +1138,13 @@ void Multistage2026::parseTelemetryFile(const std::string &filename){
 }
 
 void Multistage2026::parseGuidanceFile(const std::string &filename) {
-
-    static std::string safePath; 
-    
-    safePath = OrbiterRoot;
+    std::string safePath = OrbiterRoot;
     if (!safePath.empty() && safePath.back() != '/' && safePath.back() != '\\') {
         safePath += "/";
     }
-    safePath += guidancefile;
+
+    // USAR filename, no guidancefile
+    safePath += filename;
 
     std::replace(safePath.begin(), safePath.end(), '\\', '/');
 
@@ -1099,19 +1152,20 @@ void Multistage2026::parseGuidanceFile(const std::string &filename) {
     if (!gnc_file.is_open()) {
         oapiWriteLogV("ERROR: Cannot open guidance file: %s", safePath.c_str());
         return;
-	}
+    }
 
     nsteps = 0;
-    
-    static std::string line;
-    static std::string cmdName;
-    static std::string params;
-    static std::string item;
-    static std::string strTime;
+    std::string line;
 
     while (std::getline(gnc_file, line)) {
+
+        // limpiar saltos de línea
         line.erase(std::remove(line.begin(), line.end(), '\r'), line.end());
         line.erase(std::remove(line.begin(), line.end(), '\n'), line.end());
+
+        // TRIM izquierda
+        line.erase(0, line.find_first_not_of(" \t"));
+
         if (line.empty() || line[0] == ';') continue;
 
         if (nsteps >= Gnc_step.size()) {
@@ -1124,60 +1178,119 @@ void Multistage2026::parseGuidanceFile(const std::string &filename) {
 
         auto& currentStep = Gnc_step.at(nsteps);
 
-        strTime = line.substr(0, equalPos);
+        // inicializar
+        currentStep.Comand = "";
+        currentStep.time = 0;
+        for (int i = 0; i < 6; i++) currentStep.wValue[i] = false;
+        currentStep.trval1 = currentStep.trval2 = currentStep.trval3 = 0;
+        currentStep.trval4 = currentStep.trval5 = currentStep.trval6 = 0;
+
+        // ----------- PARSE TIEMPO -----------
+        std::string strTime = line.substr(0, equalPos);
+
+        // trim tiempo
+        strTime.erase(0, strTime.find_first_not_of(" \t"));
+        strTime.erase(strTime.find_last_not_of(" \t") + 1);
+
         try {
             currentStep.time = std::stod(strTime);
-        } catch (...) { currentStep.time = 0; }
+        } catch (...) {
+            oapiWriteLogV("WARNING: Invalid time value: %s", strTime.c_str());
+            continue; // no contar este step
+        }
 
-        size_t openParen = line.find('(', equalPos);
-        size_t closeParen = line.find(')', openParen);
-        
+        // ----------- PARSE COMANDO -----------
+        std::string cmdPart = line.substr(equalPos + 1);
+
+        // trim
+        cmdPart.erase(0, cmdPart.find_first_not_of(" \t"));
+        cmdPart.erase(cmdPart.find_last_not_of(" \t") + 1);
+
+        size_t openParen = cmdPart.find('(');
+        size_t closeParen = cmdPart.find(')', openParen);
+
+        std::string cmdName;
+        std::string params;
+
         if (openParen != std::string::npos && closeParen != std::string::npos) {
-            cmdName = line.substr(equalPos + 1, openParen - equalPos - 1);
-            cmdName.erase(std::remove_if(cmdName.begin(), cmdName.end(), ::isspace), cmdName.end());
-            currentStep.Comand = cmdName;
-
-            params = line.substr(openParen + 1, closeParen - openParen - 1);
-            std::stringstream ss(params);
-            
-            int pIdx = 0;
-            currentStep.trval1 = currentStep.trval2 = 0; 
-            for(int v=0; v<6; v++) currentStep.wValue[v] = false;
-
-            while (std::getline(ss, item, ',')) {
-                if (pIdx < 6) {
-                    try {
-                        double val = std::stod(item);
-                        if (pIdx == 0) currentStep.trval1 = val;
-                        else if (pIdx == 1) currentStep.trval2 = val;
-                        else if (pIdx == 2) currentStep.trval3 = val;
-                        else if (pIdx == 3) currentStep.trval4 = val;
-                        else if (pIdx == 4) currentStep.trval5 = val;
-                        else if (pIdx == 5) currentStep.trval6 = val;
-                        currentStep.wValue[pIdx] = true;
-                    } catch (...) { }
-                    pIdx++;
-                }
-            }
+            cmdName = cmdPart.substr(0, openParen);
+            params = cmdPart.substr(openParen + 1, closeParen - openParen - 1);
+        } else {
+            // comando sin parámetros (raro pero posible)
+            cmdName = cmdPart;
         }
-        
-        if (line.find("disable") != std::string::npos || line.find("DISABLE") != std::string::npos) {
+
+        // trim nombre comando
+        cmdName.erase(0, cmdName.find_first_not_of(" \t"));
+        cmdName.erase(cmdName.find_last_not_of(" \t") + 1);
+
+        // normalizar a minúsculas (MUY importante para tu ejemplo)
+        std::transform(cmdName.begin(), cmdName.end(), cmdName.begin(),
+            [](unsigned char c){ return std::tolower(c); });
+
+        currentStep.Comand = cmdName;
+
+        // ----------- PARSE PARÁMETROS -----------
+        if (!params.empty()) {
+            ParseGNCParams(params, currentStep);
+        }
+
+        // ----------- COMANDOS ESPECIALES -----------
+        if (cmdName == "disable") {
             std::string lowLine = line;
-            std::transform(lowLine.begin(), lowLine.end(), lowLine.begin(), ::tolower);
-            if (lowLine.find("pitch") != std::string::npos) currentStep.Comand = "disablepitch";
-            else if (lowLine.find("roll") != std::string::npos) currentStep.Comand = "disableroll";
-            else if (lowLine.find("jettison") != std::string::npos) currentStep.Comand = "disablejettison";
+            std::transform(lowLine.begin(), lowLine.end(), lowLine.begin(),
+                [](unsigned char c){ return std::tolower(c); });
+
+            if (lowLine.find("pitch") != std::string::npos)
+                currentStep.Comand = "disablepitch";
+            else if (lowLine.find("roll") != std::string::npos)
+                currentStep.Comand = "disableroll";
+            else if (lowLine.find("jettison") != std::string::npos)
+                currentStep.Comand = "disablejettison";
         }
+
+        // DEBUG útil
+        oapiWriteLogV("GNC STEP %d: t=%.2f cmd=%s", nsteps, currentStep.time, currentStep.Comand.c_str());
 
         nsteps++;
-        
-        line.clear();
-        cmdName.clear();
-        params.clear();
-        item.clear();
     }
-    
+
     VinkaComposeGNCSteps();
     VinkaRearrangeSteps();
     nsteps = VinkaCountSteps();
+}
+
+
+void Multistage2026::ParseGNCParams(std::string params, GNC_STEP &step) {
+    std::stringstream ss(params);
+    std::string token;
+    int index = 0;
+
+    while (std::getline(ss, token, ',') && index < 6) {
+        // Trim whitespace
+        token.erase(0, token.find_first_not_of(" \t"));
+        token.erase(token.find_last_not_of(" \t") + 1);
+
+        if (!token.empty()) {
+            try {
+                double value = std::stod(token);
+
+                switch (index) {
+                    case 0: step.trval1 = value; break;
+                    case 1: step.trval2 = value; break;
+                    case 2: step.trval3 = value; break;
+                    case 3: step.trval4 = value; break;
+                    case 4: step.trval5 = value; break;
+                    case 5: step.trval6 = value; break;
+                }
+
+                step.wValue[index] = true;
+            } catch (...) {
+                // Si falla la conversión, lo ignoramos pero no rompemos el parser
+                step.wValue[index] = false;
+            }
+        }
+
+        index++;
+    }
 }

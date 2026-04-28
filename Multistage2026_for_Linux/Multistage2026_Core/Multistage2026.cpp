@@ -1,7 +1,6 @@
 #include "Multistage2026.hpp"
 #include <algorithm>
 #include <array>
-#include <cstdint>
 #include <cstring>
 #include <filesystem>
 #include <format>
@@ -1107,73 +1106,128 @@ void Multistage2026::CreateMainThruster() {
 	SURFHANDLE ChoosenTexture = GetProperExhaustTexture(stage->at(currentStage).eng_tex); //Initialization of Texture
 
 
-	int i;
-	for (i = 0; i < stage->at(currentStage).nEngines; i++) {
+	auto ps1 = GetProperPS(stage->at(currentStage).eng_pstream1);
+	auto ps2 = GetProperPS(stage->at(currentStage).eng_pstream2);
 
-		exhaustN.at(currentStage).at(i) = AddExhaust(stage->at(currentStage).th_main_h.at(i), 10 * stage->at(currentStage).eng_diameter * stage->at(currentStage).engV4.at(i).t, stage->at(currentStage).eng_diameter * stage->at(currentStage).engV4.at(i).t, stage->at(currentStage).eng.at(i), operator*(stage->at(currentStage).eng_dir, -1), GetProperExhaustTexture(stage->at(currentStage).eng_tex.data()));
+	for (int i = 0; i < stage->at(currentStage).nEngines; i++)
+	{
+		if (!stage->at(currentStage).ParticlesPacked)
+		{
+			if (stage->at(currentStage).wps1 && !stage->at(currentStage).eng_pstream1.empty())
+			{
+				PARTICLESTREAMSPEC pss = ps1.Pss;
 
-		if (!stage->at(currentStage).ParticlesPacked) {
-			if (stage->at(currentStage).wps1) {
-				PARTICLESTREAMSPEC Pss1 = GetProperPS(stage->at(currentStage).eng_pstream1.data()).Pss;
-				AddExhaustStreamGrowing(stage->at(currentStage).th_main_h.at(i), stage->at(currentStage).eng.at(i), &Pss1, GetProperPS(stage->at(currentStage).eng_pstream1.data()).Growing, GetProperPS(stage->at(currentStage).eng_pstream1.data()).GrowFactor_size, GetProperPS(stage->at(currentStage).eng_pstream1.data()).GrowFactor_rate, true, false, currentStage, i);
+				AddExhaustStreamGrowing(
+					stage->at(currentStage).th_main_h.at(i),
+					stage->at(currentStage).eng.at(i),
+					&pss,
+					ps1.Growing,
+					ps1.GrowFactor_size,
+					ps1.GrowFactor_rate,
+					true, false,
+					currentStage, i
+				);
 
-				oapiWriteLogV("%s: Stage n.%i Engine Exhaust Stream Added: %s to engine n.%i", GetName(), currentStage + 1, stage->at(currentStage).eng_pstream1.c_str(), i + 1);
+				oapiWriteLogV("%s: Stage n.%i Engine Exhaust Stream Added: %s to engine n.%i",
+					GetName(), currentStage + 1,
+					stage->at(currentStage).eng_pstream1.c_str(), i + 1);
 			}
-			if (stage->at(currentStage).wps2) {
-				PARTICLESTREAMSPEC Pss2 = GetProperPS(stage->at(currentStage).eng_pstream2.data()).Pss;
-				AddExhaustStreamGrowing(stage->at(currentStage).th_main_h.at(i), stage->at(currentStage).eng.at(i), &Pss2, GetProperPS(stage->at(currentStage).eng_pstream2.data()).Growing, GetProperPS(stage->at(currentStage).eng_pstream2.data()).GrowFactor_size, GetProperPS(stage->at(currentStage).eng_pstream2.data()).GrowFactor_rate, true, false, currentStage, i);
-				oapiWriteLogV("%s: Stage n.%i Engine Exhaust Stream Added: %s to engine n.%i", GetName(), currentStage + 1, stage->at(currentStage).eng_pstream2.c_str(), i + 1);
+
+			if (stage->at(currentStage).wps2 && !stage->at(currentStage).eng_pstream2.empty())
+			{
+				PARTICLESTREAMSPEC pss = ps2.Pss;
+
+				AddExhaustStreamGrowing(
+					stage->at(currentStage).th_main_h.at(i),
+					stage->at(currentStage).eng.at(i),
+					&pss,
+					ps2.Growing,
+					ps2.GrowFactor_size,
+					ps2.GrowFactor_rate,
+					true, false,
+					currentStage, i
+				);
+
+				oapiWriteLogV("%s: Stage n.%i Engine Exhaust Stream Added: %s to engine n.%i",
+					GetName(), currentStage + 1,
+					stage->at(currentStage).eng_pstream2.c_str(), i + 1);
 			}
 		}
-		oapiWriteLogV("%s: Stage n. %i Engines Exhaust Added--> number of engines: %i , diameter: %.3f, position x: %.3f y: %.3f z: %.3f", GetName(), currentStage + 1, stage->at(currentStage).nEngines, stage->at(currentStage).eng_diameter * stage->at(currentStage).engV4.at(i).t, stage->at(currentStage).eng.at(i).x, stage->at(currentStage).eng.at(i).y, stage->at(currentStage).eng.at(i).z);
 	}
 
 	if (stage->at(currentStage).ParticlesPacked){
-		std::array<PARTICLESTREAMSPEC, 2> partpacked;
-		partpacked.at(0) = GetProperPS(stage->at(currentStage).eng_pstream1.data()).Pss;
-		partpacked.at(1) = GetProperPS(stage->at(currentStage).eng_pstream2.data()).Pss;
 
+		auto ps1 = GetProperPS(stage->at(currentStage).eng_pstream1);
+		auto ps2 = GetProperPS(stage->at(currentStage).eng_pstream2);
+
+		std::array<PARTICLESTREAMSPEC, 2> partpacked;
+
+		if (!stage->at(currentStage).eng_pstream1.empty())
+			partpacked[0] = ps1.Pss;
+
+		if (!stage->at(currentStage).eng_pstream2.empty())
+			partpacked[1] = ps2.Pss;
 
 		int engine = abs(stage->at(currentStage).ParticlesPackedToEngine) - 1;
 
 		VECTOR3 thdir;
 		std::array<VECTOR3, 2> Pos;
+
 		GetThrusterDir(stage->at(currentStage).th_main_h.at(engine), thdir);
-		thdir.x *= -1;
-		thdir.y *= -1;
-		thdir.z *= -1;
-		if (stage->at(currentStage).ParticlesPackedToEngine > 0) {
-			Pos.at(0) = stage->at(currentStage).eng.at(engine);
-			Pos.at(1) = stage->at(currentStage).eng.at(engine);
-		} else {
-			double Posx = 0;
-			double Posy = 0;
-			double Posz = 0;
+		thdir = _V(-thdir.x, -thdir.y, -thdir.z);
+
+		if (stage->at(currentStage).ParticlesPackedToEngine > 0)
+		{
+			Pos[0] = stage->at(currentStage).eng.at(engine);
+			Pos[1] = stage->at(currentStage).eng.at(engine);
+		}
+		else
+		{
+			VECTOR3 avg = _V(0,0,0);
+
 			for (int x = 0; x < stage->at(currentStage).nEngines; x++)
-			{
-				Posx += stage->at(currentStage).eng.at(x).x;
-				Posy += stage->at(currentStage).eng.at(x).y;
-				Posz += stage->at(currentStage).eng.at(x).z;
-			}
+				avg += stage->at(currentStage).eng.at(x);
 
-			Posx /= stage->at(currentStage).nEngines;
-			Posy /= stage->at(currentStage).nEngines;
-			Posz /= stage->at(currentStage).nEngines;
+			avg /= (double)stage->at(currentStage).nEngines;
 
-			Pos.at(0).x = Posx;
-			Pos.at(0).y = Posy;
-			Pos.at(0).z = Posz;
-			Pos.at(1) = Pos.at(0);
-
-
+			Pos[0] = avg;
+			Pos[1] = avg;
 		}
-		if (stage->at(currentStage).wps1) {
-			AddExhaustStreamGrowing(stage->at(currentStage).th_main_h.at(engine), Pos.at(0), &partpacked.at(1), GetProperPS(stage->at(currentStage).eng_pstream1.data()).Growing, GetProperPS(stage->at(currentStage).eng_pstream1.data()).GrowFactor_size, GetProperPS(stage->at(currentStage).eng_pstream1.data()).GrowFactor_rate, true, false, currentStage, engine);
-			oapiWriteLogV("%s: Stage n.%i Engine Packed Exhaust Stream Added: %s to engine n.%i", GetName(), currentStage + 1, stage->at(currentStage).eng_pstream1.c_str(), engine + 1);
+
+		if (stage->at(currentStage).wps1 && !stage->at(currentStage).eng_pstream1.empty())
+		{
+			AddExhaustStreamGrowing(
+				stage->at(currentStage).th_main_h.at(engine),
+				Pos[0],
+				&partpacked[0],   // ✅ CORRECTO
+				ps1.Growing,
+				ps1.GrowFactor_size,
+				ps1.GrowFactor_rate,
+				true, false,
+				currentStage, engine
+			);
+
+			oapiWriteLogV("%s: Stage n.%i Engine Packed Exhaust Stream Added: %s to engine n.%i",
+				GetName(), currentStage + 1,
+				stage->at(currentStage).eng_pstream1.c_str(), engine + 1);
 		}
-		if (stage->at(currentStage).wps2) {
-			AddExhaustStreamGrowing(stage->at(currentStage).th_main_h.at(engine), Pos.at(1), &partpacked.at(1), GetProperPS(stage->at(currentStage).eng_pstream2.data()).Growing, GetProperPS(stage->at(currentStage).eng_pstream2.data()).GrowFactor_size, GetProperPS(stage->at(currentStage).eng_pstream2.data()).GrowFactor_rate, true, false, currentStage, engine);
-			oapiWriteLogV("%s: Stage n.%i Engine Packed Exhaust Stream Added: %s to engine n.%i", GetName(), currentStage + 1, stage->at(currentStage).eng_pstream2.c_str(), engine + 1);
+
+		if (stage->at(currentStage).wps2 && !stage->at(currentStage).eng_pstream2.empty())
+		{
+			AddExhaustStreamGrowing(
+				stage->at(currentStage).th_main_h.at(engine),
+				Pos[1],
+				&partpacked[1],   // ✅ CORRECTO
+				ps2.Growing,
+				ps2.GrowFactor_size,
+				ps2.GrowFactor_rate,
+				true, false,
+				currentStage, engine
+			);
+
+			oapiWriteLogV("%s: Stage n.%i Engine Packed Exhaust Stream Added: %s to engine n.%i",
+				GetName(), currentStage + 1,
+				stage->at(currentStage).eng_pstream2.c_str(), engine + 1);
 		}
 
 	}
@@ -1233,14 +1287,14 @@ void Multistage2026::RotatePayload(int pns, int nm, VECTOR3 anglesrad) {
 	}
 
 	if (!DeveloperMode) {
-		payloadrotatex[pns][nm] = new MGROUP_ROTATE(payload->at(pns).msh_idh[nm], NULL, NULL, reference, _V(1, 0, 0), (float)2 * PI);
+		payloadrotatex[pns][nm] = new MGROUP_ROTATE(payload->at(pns).msh_idh[nm], NULL, 0, reference, _V(1, 0, 0), (float)2 * PI);
 		RotatePayloadAnim_x[pns][nm] = CreateAnimation(0);
 		anim_x[pns][nm] = AddAnimationComponent(RotatePayloadAnim_x[pns][nm], 0.0f, 1.0f, payloadrotatex[pns][nm]);
-		payloadrotatey[pns][nm] = new MGROUP_ROTATE(payload->at(pns).msh_idh[nm], NULL, NULL, reference, _V(0, 1, 0), (float)2 * PI);
+		payloadrotatey[pns][nm] = new MGROUP_ROTATE(payload->at(pns).msh_idh[nm], NULL, 0, reference, _V(0, 1, 0), (float)2 * PI);
 		RotatePayloadAnim_y[pns][nm] = CreateAnimation(0);
 		anim_y[pns][nm] = AddAnimationComponent(RotatePayloadAnim_y[pns][nm], 0.0f, 1.0f, payloadrotatey[pns][nm]);
 
-		payloadrotatez[pns][nm] = new MGROUP_ROTATE(payload->at(pns).msh_idh[nm], NULL, NULL, reference, _V(0, 0, 1), (float)2 * PI);
+		payloadrotatez[pns][nm] = new MGROUP_ROTATE(payload->at(pns).msh_idh[nm], NULL, 0, reference, _V(0, 0, 1), (float)2 * PI);
 		RotatePayloadAnim_z[pns][nm] = CreateAnimation(0);
 		anim_z[pns][nm] = AddAnimationComponent(RotatePayloadAnim_z[pns][nm], 0.0f, 1.0f, payloadrotatez[pns][nm]);
 
@@ -1531,7 +1585,7 @@ void Multistage2026::UpdateLivePayloads() {
 			VESSELSTATUS2 vslive;
 			memset(&vslive, 0, sizeof(vslive));
 			vslive.version = 2;
-			OBJHANDLE checklive = oapiGetVesselByName(payload->at(pns).name.data());
+			OBJHANDLE checklive = oapiGetVesselByName(payload->at(pns).name.c_str());
 			if (oapiIsVessel(checklive)) {
 				ATTACHMENTHANDLE liveatt;
 				VESSEL4* livepl;
@@ -1668,13 +1722,13 @@ void Multistage2026::CreateUllageAndBolts() {
 			VECTOR3 ulldir = RotateVecZ(stage->at(currentStage).ullage.dir, ull_angle);
 			VECTOR3 ullpos = RotateVecZ(stage->at(currentStage).ullage.pos, ull_angle);
 
-			AddExhaust(stage->at(currentStage).ullage.th_ullage, stage->at(currentStage).ullage.length, stage->at(currentStage).ullage.diameter, ullpos, ulldir, GetProperExhaustTexture(stage->at(currentStage).ullage.tex.data()));
+			AddExhaust(stage->at(currentStage).ullage.th_ullage, stage->at(currentStage).ullage.length, stage->at(currentStage).ullage.diameter, ullpos, ulldir, GetProperExhaustTexture(stage->at(currentStage).ullage.tex));
 		}
 	}
 
 	if (stage->at(currentStage).expbolt.wExpbolt)
 	{
-		PARTICLESTREAMSPEC Pss3 = GetProperPS(stage->at(currentStage).expbolt.pstream.data()).Pss;
+		PARTICLESTREAMSPEC Pss3 = GetProperPS(stage->at(currentStage).expbolt.pstream).Pss;
 		stage->at(currentStage).expbolt.threxp_h = CreateThruster(stage->at(currentStage).expbolt.pos, stage->at(currentStage).expbolt.dir, 0, stage->at(currentStage).tank, 100000, 100000);
 		AddExhaustStream(stage->at(currentStage).expbolt.threxp_h, &Pss3);
 	}
@@ -1790,16 +1844,16 @@ void Multistage2026::VehicleSetup() {
 			for (bii = 0; bii < booster->at(bi).N; bii++) {
 				booster->at(bi).eng[bii] = _V(0, 0, -booster->at(bi).height * 0.5);
 				VECTOR3 engofs = operator+(GetBoosterPos(bi, bii), booster->at(bi).eng[bii]);
-				AddExhaust(booster->at(bi).th_booster_h.at(bii), 10 * booster->at(bi).eng_diameter, booster->at(bi).eng_diameter, engofs, operator*(booster->at(bi).eng_dir, -1), GetProperExhaustTexture(booster->at(bi).eng_tex.data()));
+				AddExhaust(booster->at(bi).th_booster_h.at(bii), 10 * booster->at(bi).eng_diameter, booster->at(bi).eng_diameter, engofs, operator*(booster->at(bi).eng_dir, -1), GetProperExhaustTexture(booster->at(bi).eng_tex));
 
 				if (booster->at(bi).wps1) {
-					PARTICLESTREAMSPEC Pss4 = GetProperPS(booster->at(bi).eng_pstream1.data()).Pss;
-					AddExhaustStreamGrowing(booster->at(bi).th_booster_h.at(bii), engofs, &Pss4, GetProperPS(booster->at(bi).eng_pstream1.data()).Growing, GetProperPS(booster->at(bi).eng_pstream1.data()).GrowFactor_size, GetProperPS(booster->at(bi).eng_pstream1.data()).GrowFactor_rate, true, true, bi, bii);
+					PARTICLESTREAMSPEC Pss4 = GetProperPS(booster->at(bi).eng_pstream1).Pss;
+					AddExhaustStreamGrowing(booster->at(bi).th_booster_h.at(bii), engofs, &Pss4, GetProperPS(booster->at(bi).eng_pstream1).Growing, GetProperPS(booster->at(bi).eng_pstream1).GrowFactor_size, GetProperPS(booster->at(bi).eng_pstream1).GrowFactor_rate, true, true, bi, bii);
 					oapiWriteLogV("%s: Booster Group n.%i Engine Exhaust Stream Added: %s to engine n.%i", GetName(), bi + 1, booster->at(bi).eng_pstream1.c_str(), bii + 1);
 				}
 				if (booster->at(bi).wps2) {
-					PARTICLESTREAMSPEC Pss5 = GetProperPS(booster->at(bi).eng_pstream2.data()).Pss;
-					AddExhaustStreamGrowing(booster->at(bi).th_booster_h.at(bii), engofs, &Pss5, GetProperPS(booster->at(bi).eng_pstream2.data()).Growing, GetProperPS(booster->at(bi).eng_pstream2.data()).GrowFactor_size, GetProperPS(booster->at(bi).eng_pstream2.data()).GrowFactor_rate, true, true, bi, bii);
+					PARTICLESTREAMSPEC Pss5 = GetProperPS(booster->at(bi).eng_pstream2).Pss;
+					AddExhaustStreamGrowing(booster->at(bi).th_booster_h.at(bii), engofs, &Pss5, GetProperPS(booster->at(bi).eng_pstream2).Growing, GetProperPS(booster->at(bi).eng_pstream2).GrowFactor_size, GetProperPS(booster->at(bi).eng_pstream2).GrowFactor_rate, true, true, bi, bii);
 					oapiWriteLogV("%s: Booster Group n.%i Engine Exhaust Stream Added: %s to engine n.%i", GetName(), bi + 1, booster->at(bi).eng_pstream2.c_str(), bii + 1);
 				}
 				oapiWriteLogV("%s: Booster Engines Exhaust Added--> Booster Group: %i number of engines: %i , diameter: %.3f, position x: %.3f y: %.3f z: %.3f", GetName(), bi + 1, booster->at(bi).nEngines, booster->at(bi).eng_diameter, engofs.x, engofs.y, engofs.z);
@@ -1812,17 +1866,17 @@ void Multistage2026::VehicleSetup() {
 
 					VECTOR3 engofs = operator+(GetBoosterPos(bi, biii), RotateVecZ(booster->at(bi).eng[bii], angle));
 
-					AddExhaust(booster->at(bi).th_booster_h[biii - 1], 10 * booster->at(bi).eng_diameter, booster->at(bi).eng_diameter, engofs, operator*(booster->at(bi).eng_dir, -1), GetProperExhaustTexture(booster->at(bi).eng_tex.data()));
+					AddExhaust(booster->at(bi).th_booster_h[biii - 1], 10 * booster->at(bi).eng_diameter, booster->at(bi).eng_diameter, engofs, operator*(booster->at(bi).eng_dir, -1), GetProperExhaustTexture(booster->at(bi).eng_tex));
 
 					if (booster->at(bi).wps1) {
-						PARTICLESTREAMSPEC Pss6 = GetProperPS(booster->at(bi).eng_pstream1.data()).Pss;
-						AddExhaustStreamGrowing(booster->at(bi).th_booster_h[biii - 1], engofs, &Pss6, GetProperPS(booster->at(bi).eng_pstream1.data()).Growing, GetProperPS(booster->at(bi).eng_pstream1.data()).GrowFactor_size, GetProperPS(booster->at(bi).eng_pstream1.data()).GrowFactor_rate, true, true, bi, biii - 1);
+						PARTICLESTREAMSPEC Pss6 = GetProperPS(booster->at(bi).eng_pstream1).Pss;
+						AddExhaustStreamGrowing(booster->at(bi).th_booster_h[biii - 1], engofs, &Pss6, GetProperPS(booster->at(bi).eng_pstream1).Growing, GetProperPS(booster->at(bi).eng_pstream1).GrowFactor_size, GetProperPS(booster->at(bi).eng_pstream1).GrowFactor_rate, true, true, bi, biii - 1);
 						oapiWriteLogV("%s: Booster Group n.%i Engine Exhaust Stream Added: %s to engine n.%i", GetName(), bi + 1, booster->at(bi).eng_pstream1.c_str(), biii);
 					}
 					if (booster->at(bi).wps2) {
-						PARTICLESTREAMSPEC Pss7 = GetProperPS(booster->at(bi).eng_pstream2.data()).Pss;
-						AddExhaustStreamGrowing(booster->at(bi).th_booster_h[biii - 1], engofs, &Pss7, GetProperPS(booster->at(bi).eng_pstream2.data()).Growing, GetProperPS(booster->at(bi).eng_pstream2.data()).GrowFactor_size, GetProperPS(booster->at(bi).eng_pstream2.data()).GrowFactor_rate, true, true, bi, biii - 1);
-						oapiWriteLogV("%s: Booster Group n.%i Engine Exhaust Stream Added: %s to engine n.%i", GetName(), bi + 1, booster->at(bi).eng_pstream2.data(), biii);
+						PARTICLESTREAMSPEC Pss7 = GetProperPS(booster->at(bi).eng_pstream2).Pss;
+						AddExhaustStreamGrowing(booster->at(bi).th_booster_h[biii - 1], engofs, &Pss7, GetProperPS(booster->at(bi).eng_pstream2).Growing, GetProperPS(booster->at(bi).eng_pstream2).GrowFactor_size, GetProperPS(booster->at(bi).eng_pstream2).GrowFactor_rate, true, true, bi, biii - 1);
+						oapiWriteLogV("%s: Booster Group n.%i Engine Exhaust Stream Added: %s to engine n.%i", GetName(), bi + 1, booster->at(bi).eng_pstream2.c_str(), biii);
 					}
 					oapiWriteLogV("%s: Booster Engines Exhaust Added--> Booster Group: %i number of engines: %i , diameter: %.3f, position x: %.3f y: %.3f z: %.3f", GetName(), bi + 1, booster->at(bi).nEngines, booster->at(bi).eng_diameter, engofs.x, engofs.y, engofs.z);
 				}
@@ -1832,7 +1886,7 @@ void Multistage2026::VehicleSetup() {
 		if (booster->at(bi).expbolt.wExpbolt)
 		{
 			booster->at(bi).expbolt.threxp_h = CreateThruster(booster->at(bi).expbolt.pos, booster->at(bi).expbolt.dir, 0, booster->at(bi).tank, 100000, 100000);
-			PARTICLESTREAMSPEC Pss8 = GetProperPS(booster->at(bi).expbolt.pstream.data()).Pss;
+			PARTICLESTREAMSPEC Pss8 = GetProperPS(booster->at(bi).expbolt.pstream).Pss;
 			AddExhaustStream(booster->at(bi).expbolt.threxp_h, &Pss8);
 		}
 	}
@@ -2666,7 +2720,7 @@ void Multistage2026::CheckForFX(int fxtype, double param)
 			{
 				FX_Mach.added = true;
 				for (int nmach = 0; nmach < FX_Mach.nmach; nmach++) {
-					PARTICLESTREAMSPEC Pss9 = GetProperPS(FX_Mach.pstream.data()).Pss;
+					PARTICLESTREAMSPEC Pss9 = GetProperPS(FX_Mach.pstream).Pss;
 					FX_Mach.ps_h[nmach] = AddParticleStream(&Pss9, FX_Mach.off[nmach], FX_Mach.dir, &lvl);
 				}
 			}
@@ -2681,20 +2735,31 @@ void Multistage2026::CheckForFX(int fxtype, double param)
 		}
 		break;
 	case FXVENT:
-		for (int fv = 1; fv <= FX_Vent.nVent; fv++)
-		{
+		for (int fv = 0; fv < FX_Vent.nVent; fv++){
 			if (param < FX_Vent.time_fin[fv])
 			{
 				if (!FX_Vent.added[fv])
 				{
-					PARTICLESTREAMSPEC Pss10 = GetProperPS(FX_Vent.pstream.data()).Pss;
-					FX_Vent.ps_h[fv] = AddParticleStream(&Pss10, FX_Vent.off[fv], FX_Vent.dir[fv], &lvl);
+					PARTICLESTREAMSPEC Pss10 = GetProperPS(FX_Vent.pstream).Pss;
+					FX_Vent.ps_h[fv] = AddParticleStream(
+						&Pss10,
+						FX_Vent.off[fv],
+						FX_Vent.dir[fv],
+						&lvl
+					);
+
 					FX_Vent.added[fv] = true;
-					oapiWriteLogV("Venting Effect Added @: %.3f,%.3f,%.3f dir: %.3f,%.3f,%.3f", FX_Vent.off[fv].x, FX_Vent.off[fv].y, FX_Vent.off[fv].z, FX_Vent.dir[fv].x, FX_Vent.dir[fv].y, FX_Vent.dir[fv].z);
+
+					oapiWriteLogV(
+						"Venting Effect Added @: %.3f,%.3f,%.3f dir: %.3f,%.3f,%.3f",
+						FX_Vent.off[fv].x, FX_Vent.off[fv].y, FX_Vent.off[fv].z,
+						FX_Vent.dir[fv].x, FX_Vent.dir[fv].y, FX_Vent.dir[fv].z
+					);
 				}
 			}
-			else {
-				if (FX_Vent.added[fv] == true)
+			else
+			{
+				if (FX_Vent.added[fv])
 				{
 					DelExhaustStream(FX_Vent.ps_h[fv]);
 					FX_Vent.added[fv] = false;
@@ -3384,7 +3449,7 @@ void Multistage2026::clbkSaveState(FILEHANDLE scn)
 	}
 
 	savebuff = "ALT_STEPS";
-	savevalbuff = std::format("%.1f,%.1f,%.1f,%.1f", altsteps.at(0), altsteps.at(1), altsteps.at(2), altsteps.at(3));
+	savevalbuff = std::format("{:.1f},{:.1f},{:.1f},{:.1f}", altsteps.at(0), altsteps.at(1), altsteps.at(2), altsteps.at(3));
 	oapiWriteScenario_string(scn, const_cast<char *>(savebuff.c_str()), const_cast<char *>(savevalbuff.c_str()));
 
 	savebuff = "PEG_PITCH_LIMIT";
@@ -3664,15 +3729,35 @@ void Multistage2026::clbkPostCreation() {
 	oapiWriteLog(const_cast<char*>("Post Creation Terminated"));
 }
 
-void Multistage2026::CreateLaunchFX(){
-	double alpha = 0;
-	for (int i = 1; i <= FX_Launch.N; i++){
-		PARTICLESTREAMSPEC Pss11 = GetProperPS(FX_Launch.Ps1).Pss;
-		alpha = (PI * 2 / FX_Launch.N * (i - 1)) + FX_Launch.Angle * RAD;
-		vramp->AddParticleStream(&Pss11, _V(FX_Launch.Distance * cos(alpha), FX_Launch.Distance * sin(alpha), FX_Launch.H), _V(cos(alpha), sin(alpha), 0), &launchFx_level);
-		PARTICLESTREAMSPEC Pss12 = GetProperPS(FX_Launch.Ps2).Pss;
-		vramp->AddParticleStream(&Pss12, _V(FX_Launch.Distance * cos(alpha), FX_Launch.Distance * sin(alpha), FX_Launch.H), _V(cos(alpha), sin(alpha), 0), &launchFx_level);
-	}
+void Multistage2026::CreateLaunchFX()
+{
+    if (!wLaunchFX || FX_Launch.N <= 0) return;
+
+    auto ps1 = GetProperPS(FX_Launch.Ps1);
+    auto ps2 = GetProperPS(FX_Launch.Ps2);
+
+    for (int i = 0; i < FX_Launch.N; i++)
+    {
+        double alpha = (PI * 2.0 / FX_Launch.N * i) + FX_Launch.Angle * RAD;
+
+        VECTOR3 pos = _V(
+            FX_Launch.Distance * cos(alpha),
+            FX_Launch.Distance * sin(alpha),
+            FX_Launch.H
+        );
+
+        VECTOR3 dir = _V(cos(alpha), sin(alpha), 0);
+
+        if (!FX_Launch.Ps1.empty()) {
+            PARTICLESTREAMSPEC pss = ps1.Pss;
+            vramp->AddParticleStream(&pss, pos, dir, &launchFx_level);
+        }
+
+        if (!FX_Launch.Ps2.empty()) {
+            PARTICLESTREAMSPEC pss = ps2.Pss;
+            vramp->AddParticleStream(&pss, pos, dir, &launchFx_level);
+        }
+    }
 }
 
 void Multistage2026::CreateHangar(){

@@ -960,6 +960,7 @@ class Multistage2026 : public VESSEL4{
 
         void WriteGNCFile();
         void parseGuidanceFile(const std::string &filename);
+		void ParseGNCParams(std::string params, GNC_STEP &step);
 
         void VinkaComposeGNCSteps();
 	    GNC_STEP VinkaComposeSpecificGNCSteps(GNC_STEP gnc);
