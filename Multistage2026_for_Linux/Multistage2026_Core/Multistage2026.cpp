@@ -1106,11 +1106,28 @@ void Multistage2026::CreateMainThruster() {
 	SURFHANDLE ChoosenTexture = GetProperExhaustTexture(stage->at(currentStage).eng_tex); //Initialization of Texture
 
 
-	auto ps1 = GetProperPS(stage->at(currentStage).eng_pstream1);
-	auto ps2 = GetProperPS(stage->at(currentStage).eng_pstream2);
+	PARTICLE ps1 = GetProperPS(stage->at(currentStage).eng_pstream1);
+	PARTICLE ps2 = GetProperPS(stage->at(currentStage).eng_pstream2);
 
 	for (int i = 0; i < stage->at(currentStage).nEngines; i++)
 	{
+
+		if (!stage->at(currentStage).eng_tex.empty())
+		{
+			VECTOR3 dir;
+			GetThrusterDir(stage->at(currentStage).th_main_h.at(i), dir);
+			dir = _V(-dir.x, -dir.y, -dir.z);
+
+			AddExhaust(
+				stage->at(currentStage).th_main_h.at(i),
+				10 * stage->at(currentStage).eng_diameter,
+				stage->at(currentStage).eng_diameter,
+				stage->at(currentStage).eng.at(i),
+				dir,
+				ChoosenTexture
+			);
+		}
+
 		if (!stage->at(currentStage).ParticlesPacked)
 		{
 			if (stage->at(currentStage).wps1 && !stage->at(currentStage).eng_pstream1.empty())
