@@ -253,6 +253,7 @@ struct BOOSTER {
 	PROPELLANT_HANDLE tank;
 	std::array<THRUSTER_HANDLE, 10> th_booster_h;
 	std::array<MESHHANDLE, 10> msh_h;
+	std::array<std::string, 10> resolved_meshname;
 	std::array<int, 10> msh_idh;
 	int nEngines;
 	double currDelay;

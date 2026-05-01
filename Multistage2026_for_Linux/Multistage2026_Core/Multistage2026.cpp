@@ -2179,99 +2179,99 @@ void Multistage2026::Spawn(int type, int current) {
 void Multistage2026::Jettison(int type, int current) {
 	
 	switch (type) {
-	case TBOOSTER:
-		Spawn(type, current);
+		case TBOOSTER:
+			Spawn(type, current);
 
-		int i;
-		for (i = 1; i < booster->at(current).N + 1; i++) {
-			DelMesh(booster->at(current).msh_idh[i]);
-		}
-
-		//DelThruster(booster->at(current).th_booster_h.at(0));
-		DelThrusterGroup(booster->at(current).Thg_boosters_h, false);
-
-		DelPropellantResource(booster->at(current).tank);
-		currentBooster += 1;
-
-		UpdateMass();
-		UpdatePMI();
-
-		if (currentBooster >= nBoosters) { wBoosters = false; }
-		break;
-
-	case TSTAGE:
-
-		Spawn(type, current);
-
-
-		DelMesh(stage->at(current).msh_idh);
-		ClearThrusterDefinitions();
-		//DelThrusterGroup(thg_h_main,true);
-		//DelThruster(stage->at(current).th_main_h[0]);
-		DelPropellantResource(stage->at(current).tank);
-		currentStage += 1;
-
-		UpdateMass();
-		UpdatePMI();
-		CreateUllageAndBolts();
-		CreateMainThruster();
-		CreateRCS();
-		ShiftCG(_V(0, 0, (stage->at(current + 1).off.z - stage->at(current).off.z)));
-
-
-		SetCameraOffset(_V(0, 0, 0));
-
-		break;
-
-	case TPAYLOAD:
-
-		Spawn(type, current);
-
-		if (!payload->at(current).live) {
-			for (int ss = 0; ss < payload->at(current).nMeshes; ss++) {
-				DelMesh(payload->at(current).msh_idh[ss]);
+			int i;
+			for (i = 1; i < booster->at(current).N + 1; i++) {
+				DelMesh(booster->at(current).msh_idh[i]);
 			}
-		}
-		currentPayload += 1;
-		UpdateMass();
-		UpdatePMI();
 
-		break;
-	case TFAIRING:
-		Spawn(type, current);
-		int pns;
-		for (pns = currentPayload; pns < nPayloads; pns++) {
-			if (!payload->at(pns).live) {
-				for (int s = 0; s < payload->at(pns).nMeshes; s++) {
-					SetMeshVisibilityMode(payload->at(pns).msh_idh[s], MESHVIS_EXTERNAL);
+			//DelThruster(booster->at(current).th_booster_h.at(0));
+			DelThrusterGroup(booster->at(current).Thg_boosters_h, false);
+
+			DelPropellantResource(booster->at(current).tank);
+			currentBooster += 1;
+
+			UpdateMass();
+			UpdatePMI();
+
+			if (currentBooster >= nBoosters) { wBoosters = false; }
+			break;
+
+		case TSTAGE:
+
+			Spawn(type, current);
+
+
+			DelMesh(stage->at(current).msh_idh);
+			ClearThrusterDefinitions();
+			//DelThrusterGroup(thg_h_main,true);
+			//DelThruster(stage->at(current).th_main_h[0]);
+			DelPropellantResource(stage->at(current).tank);
+			currentStage += 1;
+
+			UpdateMass();
+			UpdatePMI();
+			CreateUllageAndBolts();
+			CreateMainThruster();
+			CreateRCS();
+			ShiftCG(_V(0, 0, (stage->at(current + 1).off.z - stage->at(current).off.z)));
+
+
+			SetCameraOffset(_V(0, 0, 0));
+
+			break;
+
+		case TPAYLOAD:
+
+			Spawn(type, current);
+
+			if (!payload->at(current).live) {
+				for (int ss = 0; ss < payload->at(current).nMeshes; ss++) {
+					DelMesh(payload->at(current).msh_idh[ss]);
 				}
 			}
-		}
-		int ii;
-		for (ii = 1; ii < fairing.N + 1; ii++) {
-			DelMesh(fairing.msh_idh[ii]);
-		}
+			currentPayload += 1;
+			UpdateMass();
+			UpdatePMI();
+
+			break;
+		case TFAIRING:
+			Spawn(type, current);
+			int pns;
+			for (pns = currentPayload; pns < nPayloads; pns++) {
+				if (!payload->at(pns).live) {
+					for (int s = 0; s < payload->at(pns).nMeshes; s++) {
+						SetMeshVisibilityMode(payload->at(pns).msh_idh[s], MESHVIS_EXTERNAL);
+					}
+				}
+			}
+			int ii;
+			for (ii = 1; ii < fairing.N + 1; ii++) {
+				DelMesh(fairing.msh_idh[ii]);
+			}
 
 
-		wFairing = 0;
-		UpdateMass();
-		UpdatePMI();
-		break;
-	case TLES:
-		Spawn(type, current);
-		DelMesh(Les.msh_idh);
-		wLes = false;
-		UpdateMass();
-		UpdatePMI();
-		break;
-	case TINTERSTAGE:
-		Spawn(type, current);
-		DelMesh(stage->at(current).interstage.msh_idh);
-		currentInterstage += 1;
-		stage->at(current).wInter = false;
-		UpdateMass();
-		UpdatePMI();
-		break;
+			wFairing = 0;
+			UpdateMass();
+			UpdatePMI();
+			break;
+		case TLES:
+			Spawn(type, current);
+			DelMesh(Les.msh_idh);
+			wLes = false;
+			UpdateMass();
+			UpdatePMI();
+			break;
+		case TINTERSTAGE:
+			Spawn(type, current);
+			DelMesh(stage->at(current).interstage.msh_idh);
+			currentInterstage += 1;
+			stage->at(current).wInter = false;
+			UpdateMass();
+			UpdatePMI();
+			break;
 
 	}
 }
