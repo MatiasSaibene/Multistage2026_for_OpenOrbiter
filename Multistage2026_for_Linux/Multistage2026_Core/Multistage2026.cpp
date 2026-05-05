@@ -2541,6 +2541,12 @@ void Multistage2026::FLY(double simtime, double simdtime, double mjdate) {
 		}
 	*/
 	MET += simdtime;
+	oapiWriteLogV(
+		"ULLAGE DEBUG: delay=%.2f | ignited=%d | stageIgnited=%d",
+		stage->at(currentStage).currDelay,
+		stage->at(currentStage).ullage.ignited,
+		stage->at(currentStage).Ignited
+	);
 	return;
 }
 

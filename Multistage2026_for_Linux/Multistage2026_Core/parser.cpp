@@ -342,8 +342,12 @@ void Multistage2026::parseStages(const std::string &filename) {
 			stage->at(i).ullage.length = 10 * stage->at(i).ullage.diameter;
 		}
 
-		std::string ullage_dir = ini.GetValue(stagetxt.c_str(), "ullage_dir", "0,0,0");
-		stage->at(i).ullage.dir = CharToVec(ullage_dir);
+		std::string ullage_dir = ini.GetValue(stagetxt.c_str(), "ullage_dir", "");
+		if (ullage_dir.empty()) {
+			stage->at(i).ullage.dir = _V(0, 0, 1);
+		} else {
+			stage->at(i).ullage.dir = CharToVec(ullage_dir);
+		}
 
 		std::string ullagepos_dir = ini.GetValue(stagetxt.c_str(), "ullage_pos", "0,0,0");
 		stage->at(i).ullage.pos = CharToVec(ullagepos_dir);
