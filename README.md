@@ -21,18 +21,32 @@ And then do:
 
 Open the folder ~/orbiter_test/Orbiter/Orbitersdk/ move the folder for Linux "Multistage2026_for_Linux" inside the Orbitersdk folder.
 
-> cd ~/orbiter_test/Orbiter/Orbitersdk/Multistage2026_for_Linux
+```
+cd ~/orbiter_test/Orbiter/Orbitersdk/Multistage2026_for_Linux
+```
 
-> mkdir build && cd build
+```
 
-> cmake .. && make -j$(nproc)
+mkdir build && cd build
+```
 
-> cd ..
+```
+cmake .. && make -j$(nproc)
+```
 
-> cd Multistage2026_BIN
+```
+cd ..
+```
 
-> mv libMultistage2026_MFD.so ~/orbiter_test/Orbiter/Modules/Plugin/
+```
+cd Multistage2026_BIN
+```
 
-> mv *.so ~/orbiter_test/Orbiter/Modules
- 
+```
+mv libMultistage2026_MFD.so ~/orbiter_test/Orbiter/Modules/Plugin/
+```
+
+```
+mv *.so ~/orbiter_test/Orbiter/Modules
+``` 
 This will install the Multistage2026 modules on Orbiter Linux.
