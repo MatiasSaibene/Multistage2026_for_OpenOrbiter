@@ -41,7 +41,7 @@ add_subdirectory(MS_Camera)
 add_subdirectory(boom)
 
 # Subdirectorios externos (con carpetas de build distintas)
-add_subdirectory(${MULTISTAGE2015_MFD_PATH} "${CMAKE_BINARY_DIR}/build_MFD")
+#add_subdirectory(${MULTISTAGE2015_MFD_PATH} "${CMAKE_BINARY_DIR}/build_MFD")
 add_subdirectory(${STAGE2010_PATH} "${CMAKE_BINARY_DIR}/build_stage2010")
 
 add_compile_options(-PIC)
