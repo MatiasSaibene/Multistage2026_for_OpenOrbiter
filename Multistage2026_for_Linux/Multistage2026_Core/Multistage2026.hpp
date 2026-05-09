@@ -253,7 +253,6 @@ struct BOOSTER {
 	PROPELLANT_HANDLE tank;
 	std::array<THRUSTER_HANDLE, 10> th_booster_h;
 	std::array<MESHHANDLE, 10> msh_h;
-	std::array<std::string, 10> resolved_meshname;
 	std::array<int, 10> msh_idh;
 	int nEngines;
 	double currDelay;
@@ -926,6 +925,7 @@ class Multistage2026 : public VESSEL4{
         void parseFXVent(const std::string &filename);
         void parseFXLaunch(const std::string &filename);
         VECTOR3 GetBoosterPos(int nBooster, int N);
+		VECTOR3 GetBoosterPos0(int nBooster, int idx);
         void ArrangePayloadMeshes(const std::string &data, int pnl);
         const std::string GetProperPayloadMeshName(int pnl, int n);
         void ArrangePayloadOffsets(const std::string &data, int pnl);
