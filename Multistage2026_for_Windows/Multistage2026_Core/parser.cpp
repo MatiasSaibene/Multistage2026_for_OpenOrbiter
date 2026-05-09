@@ -234,7 +234,7 @@ void Multistage2026::parseStages(const std::string &filename) {
 		//engines///
 		int neng;
 		for (neng = 0; neng < 32; neng++) {
-			std::string engtxt = std::format("ENG_{}", neng + 1);
+			std::string engtxt = std::format("eng_{}", neng + 1);
 
 			std::string value = ini.GetValue(stagetxt.c_str(), engtxt.c_str(), "");
 
@@ -258,7 +258,7 @@ void Multistage2026::parseStages(const std::string &filename) {
 			stage->at(i).eng_diameter = 0.5 * stage->at(i).diameter;
 		}
 
-		std::string engdir_vec = ini.GetValue(stagetxt.c_str(), "eng_dir", "0,0,0");
+		std::string engdir_vec = ini.GetValue(stagetxt.c_str(), "eng_dir", "");
 		if(engdir_vec.empty()){
 			stage->at(i).eng_dir = _V(0, 0, 1);
 		} else {
@@ -285,7 +285,7 @@ void Multistage2026::parseStages(const std::string &filename) {
 
 		stage->at(i).ParticlesPackedToEngine = ini.GetLongValue(stagetxt.c_str(), "particles_packed_to_engine", 0);
 		if(stage->at(i).ParticlesPackedToEngine != 0){
-			stage->at(1).ParticlesPacked = true;
+			stage->at(i).ParticlesPacked = true;
 
 			oapiWriteLogV("%s: Particles Packed to Engine %i", GetName(), std::abs(stage->at(i).ParticlesPackedToEngine));
 		}
@@ -330,7 +330,7 @@ void Multistage2026::parseStages(const std::string &filename) {
 
 		stage->at(i).ullage.overlap = ini.GetDoubleValue(stagetxt.c_str(), "ullage_overlap", 0.0);
 
-		stage->at(i).ullage.N = ini.GetLongValue(stagetxt.c_str(), "ullage_N", 0);
+		stage->at(i).ullage.N = ini.GetLongValue(stagetxt.c_str(), "ullage_n", 0);
 
 		stage->at(i).ullage.angle = ini.GetDoubleValue(stagetxt.c_str(), "ullage_angle", 0.0);
 
@@ -355,7 +355,7 @@ void Multistage2026::parseStages(const std::string &filename) {
 		if(stage->at(i).ullage.rectfactor == 0){ stage->at(i).ullage.rectfactor = 1;}
 
 
-		std::string expbolts_pos_vec = ini.GetValue(stagetxt.c_str(), "expbolts_pos", "0,0,0");
+		std::string expbolts_pos_vec = ini.GetValue(stagetxt.c_str(), "expbolts_pos", "");
 		if(expbolts_pos_vec.empty()){
 			stage->at(i).expbolt.wExpbolt = false;
 		} else {
@@ -460,7 +460,7 @@ void Multistage2026::parseBoosters(const std::string &filename) {
 		//engines///
 		int nbeng;
 		for (nbeng = 0; nbeng < 4; nbeng++) {
-			std::string key = std::format("ENG_{}", nbeng + 1);
+			std::string key = std::format("eng_{}", nbeng + 1);
 
 			std::string value = ini.GetValue(boostertxt.c_str(), key.c_str(), "");
 
@@ -514,7 +514,7 @@ void Multistage2026::parseBoosters(const std::string &filename) {
 
 		}
 
-		std::string expbolts_pos_vec = ini.GetValue(boostertxt.c_str(), "expbolts_pos", "0,0,0");
+		std::string expbolts_pos_vec = ini.GetValue(boostertxt.c_str(), "expbolts_pos", "");
 		if(expbolts_pos_vec.empty()){
 			booster->at(b).expbolt.wExpbolt = false;
 		} else {
@@ -583,7 +583,7 @@ void Multistage2026::parseFairing(const std::string &filename) {
 
 	fairing.emptymass = ini.GetDoubleValue(fairingtxt.c_str(), "emptymass", 0.0);
 
-	std::string speed_vec = ini.GetValue(fairingtxt.c_str(), "speed", "0,0,0");
+	std::string speed_vec = ini.GetValue(fairingtxt.c_str(), "speed", "");
 
 	if(speed_vec.empty()){
 		speed_vec = "(0,-3,0)";
@@ -828,9 +828,9 @@ void Multistage2026::parseParticle(const std::string &filename) {
 
 		Particle.at(npart).TexName = dataparsed;
 
-		Particle.at(npart).GrowFactor_size = ini.GetDoubleValue(partxt.c_str(), "GrowFactor_size", 0.0);
+		Particle.at(npart).GrowFactor_size = ini.GetDoubleValue(partxt.c_str(), "growfactor_size", 0.0);
 
-		Particle.at(npart).GrowFactor_rate = ini.GetDoubleValue(partxt.c_str(), "GrowFactor_rate", 0.0);
+		Particle.at(npart).GrowFactor_rate = ini.GetDoubleValue(partxt.c_str(), "growfactor_rate", 0.0);
 
 		if((Particle.at(npart).GrowFactor_rate == 0.0) && (Particle.at(npart).GrowFactor_size == 0.0)){
 			Particle.at(npart).Growing = false;
@@ -984,10 +984,10 @@ void Multistage2026::parseFXLaunch(const std::string &filename)
     const char* section = "FX_LAUNCH";
 
     FX_Launch.N = ini.GetLongValue(section, "N", 0);
-    FX_Launch.H = ini.GetDoubleValue(section, "Height", 0.0);
-    FX_Launch.Angle = ini.GetDoubleValue(section, "Angle", 0.0);
-    FX_Launch.Distance = ini.GetDoubleValue(section, "Distance", 0.0);
-    FX_Launch.CutoffAltitude = ini.GetDoubleValue(section, "CutoffAltitude", 0.0);
+    FX_Launch.H = ini.GetDoubleValue(section, "height", 0.0);
+    FX_Launch.Angle = ini.GetDoubleValue(section, "angle", 0.0);
+    FX_Launch.Distance = ini.GetDoubleValue(section, "distance", 0.0);
+    FX_Launch.CutoffAltitude = ini.GetDoubleValue(section, "cutoffaltitude", 0.0);
 
     const char* ps1 = ini.GetValue(section, "pstream1", nullptr);
     const char* ps2 = ini.GetValue(section, "pstream2", nullptr);
@@ -1017,7 +1017,7 @@ void Multistage2026::parseTexture(const std::string &filename) {
 
     nTextures = 0;
     for (int texn = 0; texn < 16; texn++) {
-        std::string bufftxt = std::format("TEX_{}", texn + 1);
+        std::string bufftxt = std::format("tex_{}", texn + 1);
         const char* val = ini.GetValue("TEXTURE_LIST", bufftxt.c_str(), nullptr);
 
         if (!val || strlen(val) == 0) break;
@@ -1053,16 +1053,16 @@ void Multistage2026::parseMisc(const std::string &filename){
 
 	std::string Misctxt = "MISC";
 
-	Misc.COG = ini.GetDoubleValue(Misctxt.c_str(), "COG", 0.0);
-	Misc.GNC_Debug = ini.GetLongValue(Misctxt.c_str(), "GNC_DEBUG", 0);
-	int tval = ini.GetLongValue(Misctxt.c_str(), "TELEMETRY", 0);
+	Misc.COG = ini.GetDoubleValue(Misctxt.c_str(), "cog", 0.0);
+	Misc.GNC_Debug = ini.GetLongValue(Misctxt.c_str(), "gnc_debug", 0);
+	int tval = ini.GetLongValue(Misctxt.c_str(), "telemetry", 0);
 	if (tval == 1){
 		Misc.telemetry = true;
 	} else {
 		Misc.telemetry = false;
 	}
-	Misc.Focus = ini.GetLongValue(Misctxt.c_str(), "FOCUS", 0);
-	int trp = ini.GetLongValue(Misctxt.c_str(), "THRUST_REAL_POS", 0);
+	Misc.Focus = ini.GetLongValue(Misctxt.c_str(), "focus", 0);
+	int trp = ini.GetLongValue(Misctxt.c_str(), "thrust_real_pos", 0);
 	if (trp == 1){
 		Misc.thrustrealpos = true; 
 		oapiWriteLogV("%s: Thrust in Real Position", GetName());
@@ -1071,14 +1071,14 @@ void Multistage2026::parseMisc(const std::string &filename){
 	}
 	
 	Misc.VerticalAngle = 0;
-	Misc.VerticalAngle = (ini.GetDoubleValue(Misctxt.c_str(), "VERTICAL_ANGLE", 0.0) * RAD);
+	Misc.VerticalAngle = (ini.GetDoubleValue(Misctxt.c_str(), "vertical_angle", 0.0) * RAD);
 
 	//added by rcraig42 to retrieve drag_factor from ini --------------------------------------------------------
 
 	Misc.drag_factor = ini.GetDoubleValue(Misctxt.c_str(), "drag_factor", 0.0);
 
 	//------------------------------------------------------------------------------------------------------------
-	dataparsed = ini.GetValue(Misctxt.c_str(), "PAD_MODULE", "");
+	dataparsed = ini.GetValue(Misctxt.c_str(), "pad_module", "");
 	if (dataparsed.empty()){
 		Misc.PadModule = "EmptyModule";
 	} else {

@@ -2,7 +2,6 @@
 #include <array>
 #include <cstring>
 #include <format>
-#include <minwindef.h>
 #define ORBITER_MODULE
 #define STRICT
 

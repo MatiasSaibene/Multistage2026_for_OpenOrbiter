@@ -5,7 +5,6 @@
 #include <filesystem>
 #include <format>
 #include <memory>
-#include <minwindef.h>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -1117,6 +1116,15 @@ void Multistage2026::CreateMainThruster() {
 
 	for (int i = 0; i < stage->at(currentStage).nEngines; i++)
 	{
+		exhaustN.at(currentStage).at(i) = AddExhaust(
+        stage->at(currentStage).th_main_h.at(i),
+        10 * stage->at(currentStage).eng_diameter,
+        stage->at(currentStage).eng_diameter,
+        stage->at(currentStage).eng.at(i),
+        operator*(stage->at(currentStage).eng_dir, -1),
+        ChoosenTexture
+    	);
+
 		if (!stage->at(currentStage).ParticlesPacked)
 		{
 			if (stage->at(currentStage).wps1 && !stage->at(currentStage).eng_pstream1.empty())
@@ -1175,6 +1183,18 @@ void Multistage2026::CreateMainThruster() {
 			partpacked[1] = ps2.Pss;
 
 		int engine = abs(stage->at(currentStage).ParticlesPackedToEngine) - 1;
+		
+		if (engine < 0 || engine >= stage->at(currentStage).nEngines){
+			oapiWriteLogV(
+				"%s: ERROR invalid packed engine index %d in stage %d (nEngines=%d)",
+				GetName(),
+				engine,
+				currentStage + 1,
+				stage->at(currentStage).nEngines
+			);
+
+			return;
+		}
 
 		VECTOR3 thdir;
 		std::array<VECTOR3, 2> Pos;
@@ -1205,7 +1225,7 @@ void Multistage2026::CreateMainThruster() {
 			AddExhaustStreamGrowing(
 				stage->at(currentStage).th_main_h.at(engine),
 				Pos[0],
-				&partpacked[0],   // ✅ CORRECTO
+				&partpacked[0],
 				ps1.Growing,
 				ps1.GrowFactor_size,
 				ps1.GrowFactor_rate,
@@ -1252,11 +1272,29 @@ void Multistage2026::CreateMainThruster() {
 //Get Boosters Position given group number and booster number inside the group
 VECTOR3 Multistage2026::GetBoosterPos(int nBooster, int N){
 
-	VECTOR3 bpos = booster->at(nBooster).off;
+	// N is 1-based booster index for legacy compatibility
+
+	/* VECTOR3 bpos = booster->at(nBooster).off;
 	double arg = booster->at(nBooster).angle * RAD + (N - 1) * 2 * PI / booster->at(nBooster).N;
 	VECTOR3 bposdef = _V(bpos.x * cos(arg) - bpos.y * sin(arg), bpos.x * sin(arg) + bpos.y * cos(arg), bpos.z);
 
-	return bposdef;
+	return bposdef; */
+
+	return GetBoosterPos0(nBooster, N - 1);
+}
+
+VECTOR3 Multistage2026::GetBoosterPos0(int nBooster, int idx){
+    VECTOR3 bpos = booster->at(nBooster).off;
+
+    double arg =
+        booster->at(nBooster).angle * RAD +
+        idx * 2 * PI / booster->at(nBooster).N;
+
+    return _V(
+        bpos.x * cos(arg) - bpos.y * sin(arg),
+        bpos.x * sin(arg) + bpos.y * cos(arg),
+        bpos.z
+    );
 }
 
 const std::string Multistage2026::GetProperPayloadMeshName(int pnl, int n) {
@@ -1846,11 +1884,19 @@ void Multistage2026::VehicleSetup() {
 		Particle[13].Pss.srcsize = stage->at(0).diameter;
 		Particle[14].Pss.srcsize = 0.5 * stage->at(0).diameter;
 
+		SURFHANDLE BoosterChoosenTexture = GetProperExhaustTexture(booster->at(bi).eng_tex);
+
 		if (booster->at(bi).nEngines == 0) {
 			for (bii = 0; bii < booster->at(bi).N; bii++) {
 				booster->at(bi).eng[bii] = _V(0, 0, -booster->at(bi).height * 0.5);
-				VECTOR3 engofs = operator+(GetBoosterPos(bi, bii), booster->at(bi).eng[bii]);
-				AddExhaust(booster->at(bi).th_booster_h.at(bii), 10 * booster->at(bi).eng_diameter, booster->at(bi).eng_diameter, engofs, operator*(booster->at(bi).eng_dir, -1), GetProperExhaustTexture(booster->at(bi).eng_tex));
+				VECTOR3 engofs = operator+(GetBoosterPos(bi, bii + 1), booster->at(bi).eng[bii]);
+				AddExhaust(booster->at(bi).th_booster_h.at(bii), 10 * booster->at(bi).eng_diameter, booster->at(bi).eng_diameter, engofs, operator*(booster->at(bi).eng_dir, -1), BoosterChoosenTexture);
+
+				oapiWriteLogV(
+					"BOOSTER TEXTURE HANDLE = %p (%s)",
+					BoosterChoosenTexture,
+					booster->at(bi).eng_tex.c_str()
+				);
 
 				if (booster->at(bi).wps1) {
 					PARTICLESTREAMSPEC Pss4 = GetProperPS(booster->at(bi).eng_pstream1).Pss;
@@ -1872,7 +1918,14 @@ void Multistage2026::VehicleSetup() {
 
 					VECTOR3 engofs = operator+(GetBoosterPos(bi, biii), RotateVecZ(booster->at(bi).eng[bii], angle));
 
-					AddExhaust(booster->at(bi).th_booster_h[biii - 1], 10 * booster->at(bi).eng_diameter, booster->at(bi).eng_diameter, engofs, operator*(booster->at(bi).eng_dir, -1), GetProperExhaustTexture(booster->at(bi).eng_tex));
+					AddExhaust(booster->at(bi).th_booster_h[biii - 1], 10 * booster->at(bi).eng_diameter, booster->at(bi).eng_diameter, engofs, operator*(booster->at(bi).eng_dir, -1), BoosterChoosenTexture);
+
+					oapiWriteLogV(
+						"BOOSTER TEXTURE HANDLE = %p (%s)",
+						BoosterChoosenTexture,
+						booster->at(bi).eng_tex.c_str()
+					);
+
 
 					if (booster->at(bi).wps1) {
 						PARTICLESTREAMSPEC Pss6 = GetProperPS(booster->at(bi).eng_pstream1).Pss;
